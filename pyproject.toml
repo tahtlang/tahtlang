@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tahtlang"
+version = "0.1.0"
+description = "A DSL for creating Reigns-style card games"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Mirat Can Bayrak", email = "miratcanbayrak@gmail.com"}
+]
+keywords = ["dsl", "game", "card-game", "reigns", "language"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment",
+    "Topic :: Software Development :: Compilers",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "tree-sitter>=0.21.0",
+    "pygls>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black",
+    "ruff",
+]
+
+[project.scripts]
+tahtlang = "tools.compiler.main:main"
+
+[project.urls]
+Homepage = "https://github.com/tahtlang/tahtlang"
+Repository = "https://github.com/tahtlang/tahtlang"
+Issues = "https://github.com/tahtlang/tahtlang/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tools*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]
