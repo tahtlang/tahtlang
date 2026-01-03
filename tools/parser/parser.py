@@ -779,19 +779,30 @@ class Parser:
             part = part[1:].strip()
 
         # Counter condition: 'counter:hazine < 30' or 'counter:nb_war = 1'
+        # Supports: <, >, =, <=, >=
         if '<' in part or '>' in part or '=' in part:
-            # Find the operator
+            # Find the operator (check two-char operators first)
             op_pos = -1
             op = ''
             for i, ch in enumerate(part):
-                if ch in '<>=':
+                if ch in '<>':
+                    # Check for <= or >=
+                    if i + 1 < len(part) and part[i + 1] == '=':
+                        op_pos = i
+                        op = part[i:i+2]  # '<=' or '>='
+                        break
+                    else:
+                        op_pos = i
+                        op = ch
+                        break
+                elif ch == '=':
                     op_pos = i
                     op = ch
                     break
 
             if op_pos > 0:
                 left = part[:op_pos].strip()
-                right = part[op_pos + 1:].strip()
+                right = part[op_pos + len(op):].strip()
 
                 counter_id = self._strip_type_prefix(left, 'counter')
                 try:

@@ -54,19 +54,24 @@ pip install -e .
 ### Validate a file
 
 ```bash
-tahtlang validate game.tahta
+$ python -m tools.compiler examples/minimal.tahta --validate
+OK Validation successful
+  10 cards
+  4 characters
+  4 counters
+  2 flags
 ```
 
 ### Parse and dump AST
 
 ```bash
-tahtlang parse game.tahta --dump-ast
+$ python -m tools.compiler examples/tutorial.tahta --dump-ast
 ```
 
 ### Start LSP server
 
 ```bash
-tahtlang lsp
+$ python -m tools.lsp
 ```
 
 ## Editor Support
@@ -78,6 +83,11 @@ Add to your tree-sitter config and point to the grammar directory.
 ### VS Code
 
 Extension coming soon.
+
+## Examples
+
+- [`examples/minimal.tahta`](examples/minimal.tahta) - Quick start, minimal game
+- [`examples/tutorial.tahta`](examples/tutorial.tahta) - Annotated tutorial with explanations
 
 ## Documentation
 
