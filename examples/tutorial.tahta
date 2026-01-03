@@ -6,22 +6,22 @@
 # =============================================================================
 
 #
-# Her oyun entity tanımlarıyla başlar. Entity'ler oyunun yapı taşlarıdır:
-# counter'lar, flag'ler, karakterler, vb.
+# Every game starts with entity definitions. Entities are the building blocks:
+# counters, flags, characters, etc.
 #
 # Format: DisplayName (type:id, ...modifiers)
 #
-# "type:id" formatı önemli - bu sayede LSP autocomplete çalışır ve
-# referanslar açık olur. "treasury" yerine "counter:treasury" yazarsın.
+# The "type:id" format is important - it enables LSP autocomplete and makes
+# references explicit. You write "counter:treasury" not just "treasury".
 #
 
-# Settings - Her oyunda bir settings entity olmalı
+# Settings - Every game needs a settings entity
 Game Settings (settings:main)
 
 #
-# Counter'lar 0-100 arası değer tutan sayaçlardır.
-# "killer" modifier'ı: 0 veya 100'e ulaşınca oyun biter.
-# Reigns'teki dört ana metrik gibi düşün.
+# Counters hold values between 0-100.
+# The "killer" modifier: game ends when value reaches 0 or 100.
+# Think of the four main metrics in Reigns.
 #
 
 Treasury (counter:treasury, killer)
@@ -30,15 +30,15 @@ People (counter:people, killer)
 Faith (counter:faith, killer)
 
 #
-# "keep" modifier'ı: Kral ölünce sıfırlanmaz, sonraki saltanata geçer.
-# Örneğin bir yapı inşa ettiysen, yeni kralla da durur.
+# The "keep" modifier: value persists across reigns (when king dies).
+# For example, if you built a structure, it stays for the next king.
 #
 
 Cathedral Built (counter:cathedral, keep)
 
 #
-# Flag'ler boolean değerlerdir: ya var ya yok.
-# Oyun durumunu takip etmek için kullanılır.
+# Flags are booleans: either set or not set.
+# Used to track game state.
 #
 
 Game Start (flag:start)
@@ -46,8 +46,8 @@ War Active (flag:war)
 Plague (flag:plague)
 
 #
-# Variant'lar karakter görünümlerini değiştirir.
-# Aynı karakter farklı duygu/durum ile görünebilir.
+# Variants change character appearance.
+# Same character can appear with different emotions/states.
 #
 
 Angry (variant:angry)
@@ -55,8 +55,8 @@ Worried (variant:worried)
 Happy (variant:happy)
 
 #
-# Character'lar kartları sunan kişilerdir.
-# Her kartın bir bearer'ı (taşıyıcı) olmalı.
+# Characters are the people who present cards.
+# Every card must have a bearer (carrier).
 #
 
 Advisor (character:advisor)
@@ -70,11 +70,11 @@ Doctor (character:doctor)
 # =============================================================================
 
 #
-# Oyun başladığında gösterilecek kartlar.
-# "require: flag:start" sadece oyun başında gösterir.
-# "lockturn: dispose" kartı bir kez gösterip siler - bir daha gelmez.
+# Cards shown when the game starts.
+# "require: flag:start" only shows at game start.
+# "lockturn: dispose" shows card once then deletes it - never comes back.
 #
-# weight: 100 çok yüksek - bu kart kesinlikle seçilir.
+# weight: 100 is very high - this card will definitely be selected.
 #
 
 Welcome (card:welcome)
@@ -86,9 +86,9 @@ Welcome (card:welcome)
     * I am ready to rule: -flag:start, card:_tutorial_1
 
 #
-# Ring kartlar (card:_xxx, ring) queue'dan gelir, pool'dan rastgele seçilmez.
-# ID'nin başındaki _ prefix zorunlu.
-# card:_tutorial_1 komutu bu kartı queue'ya ekler, hemen sonra gösterilir.
+# Ring cards (card:_xxx, ring) come from queue, not randomly from pool.
+# The _ prefix in ID is mandatory.
+# The command card:_tutorial_1 adds this card to queue, shown immediately after.
 #
 
 Tutorial 1 (card:_tutorial_1, ring)
@@ -102,8 +102,8 @@ Tutorial 2 (card:_tutorial_2, ring)
     * Show me the pillars: card:_tutorial_3
 
 #
-# Variant kullanımı: character:advisor (variant:happy)
-# Aynı karakter farklı duygu ile görünür.
+# Variant usage: character:advisor (variant:happy)
+# Same character appears with a different emotion.
 #
 
 Tutorial 3 (card:_tutorial_3, ring)
@@ -116,12 +116,12 @@ Tutorial 3 (card:_tutorial_3, ring)
 # =============================================================================
 
 #
-# Normal kartlar weight'e göre rastgele seçilir.
-# weight: 1.0 standart ağırlık
-# weight: 2.0 when counter:treasury < 30 - koşullu ağırlık
-#   Bu kart treasury düşükken 2x daha sık gelir.
+# Regular cards are selected randomly based on weight.
+# weight: 1.0 is standard weight
+# weight: 2.0 when counter:treasury < 30 - conditional weight
+#   This card appears 2x more often when treasury is low.
 #
-# lockturn: 10 - gösterildikten sonra 10 tur bekler, sonra pool'a döner.
+# lockturn: 10 - after showing, waits 10 turns before returning to pool.
 #
 
 Tax Collection (card:tax-collection)
@@ -134,9 +134,9 @@ Tax Collection (card:tax-collection)
     * Keep current rates: counter:treasury -5
 
 #
-# Birden fazla efekt virgülle ayrılır.
-# counter:treasury -20 -> treasury'den 20 çıkar
-# counter:army 15 -> army'ye 15 ekler (işaret önemli!)
+# Multiple effects are separated by commas.
+# counter:treasury -20 -> subtract 20 from treasury
+# counter:army 15 -> add 15 to army (sign matters!)
 #
 
 Military Funding (card:military-funding)
@@ -148,7 +148,7 @@ Military Funding (card:military-funding)
     * The army is fine: counter:army -10
 
 #
-# Üç seçenekli kart - choice sayısı sınırsız.
+# Card with three choices - choice count is unlimited.
 #
 
 Church Donation (card:church-donation)
@@ -165,10 +165,10 @@ Church Donation (card:church-donation)
 # =============================================================================
 
 #
-# require: koşulu sağlanmadıkça kart pool'da görünmez.
-# !flag:war -> war flag'i OLMAMALI
-# counter:army > 40 -> army 40'tan büyük olmalı
-# Birden fazla koşul virgülle (AND mantığı)
+# require: condition must be met for card to appear in pool.
+# !flag:war -> war flag must NOT be set
+# counter:army > 40 -> army must be greater than 40
+# Multiple conditions use comma (AND logic)
 #
 
 War Declaration (card:war-declaration)
@@ -181,9 +181,9 @@ War Declaration (card:war-declaration)
     * Negotiate peace: counter:treasury -30, counter:people 10
 
 #
-# +flag:war -> war flag'ini aktif et
-# card:_war_battle@5 -> _war_battle kartını 5 tur sonra göster
-#   Bu TIMEDEVENTS pool'una gider, her tur sayaç azalır, 0'da QUEUE'ya geçer.
+# +flag:war -> activate war flag
+# card:_war_battle@5 -> show _war_battle card after 5 turns
+#   This goes to TIMEDEVENTS pool, counter decrements each turn, moves to QUEUE at 0.
 #
 
 # =============================================================================
@@ -191,8 +191,8 @@ War Declaration (card:war-declaration)
 # =============================================================================
 
 #
-# Ring kartlar hikaye zincirleri oluşturur.
-# Pool'dan rastgele seçilmezler - sadece queue/schedule ile gelirler.
+# Ring cards create story chains.
+# They are never selected randomly from pool - only via queue/schedule.
 #
 
 War Battle (card:_war_battle, ring)
@@ -203,14 +203,14 @@ War Battle (card:_war_battle, ring)
     * Defensive position: counter:army -5, card:_war_stalemate
 
 #
-# counter:army -20?-10 -> rastgele -20 ile -10 arası
-#   (Dikkat: -20, -15, -10 gibi negatif değerler)
+# counter:army -20?-10 -> random between -20 and -10
+#   (Note: -20, -15, -10 are all negative values)
 #
 # [card:_war_victory, card:_war_defeat] -> BRANCH syntax
-#   Runtime sırayla bakar, require'ı geçen ilk kartı seçer.
+#   Runtime checks in order, picks first card whose require passes.
 #   _war_victory: require: counter:army > 25
 #   _war_defeat: require: counter:army <= 25
-#   Yani army durumuna göre biri seçilir.
+#   So one is selected based on army state.
 #
 
 War Victory (card:_war_victory, ring)
@@ -237,8 +237,8 @@ War Stalemate (card:_war_stalemate, ring)
 # =============================================================================
 
 #
-# lockturn: once -> Bu saltanat boyunca bir kez gösterilir.
-#   Kral ölünce sıfırlanır, yeni saltanatta tekrar gelebilir.
+# lockturn: once -> shown only once during this reign.
+#   Resets when king dies, can appear again in next reign.
 #
 
 Plague Outbreak (card:plague-outbreak)
@@ -274,8 +274,8 @@ Plague Worsens (card:_plague_worse, ring)
 # =============================================================================
 
 #
-# card:_cathedral_complete@20 -> 20 tur sonra tamamlanır
-# counter:cathedral (keep) -> Kral ölse de kalır
+# card:_cathedral_complete@20 -> completes after 20 turns
+# counter:cathedral (keep) -> persists even if king dies
 #
 
 Cathedral Construction (card:cathedral-start)
@@ -293,9 +293,9 @@ Cathedral Complete (card:_cathedral_complete, ring)
     * Celebrate: counter:cathedral 1, counter:faith 30, counter:people 15
 
 #
-# counter:cathedral = 0 -> Sadece henüz yapılmamışsa göster
-# counter:cathedral 1 -> Yapıldı olarak işaretle
-# "keep" modifier sayesinde sonraki saltanatlarda da cathedral = 1 kalır.
+# counter:cathedral = 0 -> only show if not yet built
+# counter:cathedral 1 -> mark as built
+# Thanks to "keep" modifier, cathedral = 1 persists across reigns.
 #
 
 # =============================================================================
@@ -303,7 +303,7 @@ Cathedral Complete (card:_cathedral_complete, ring)
 # =============================================================================
 
 #
-# Bu tutorial'da öğrendiklerimiz:
+# What we learned in this tutorial:
 #
 # ENTITIES:
 #   - counter:id, killer, keep
