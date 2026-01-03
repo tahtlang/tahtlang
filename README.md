@@ -81,7 +81,7 @@ Extension coming soon.
 
 ## Documentation
 
-- [Language Specification](docs/spec/taht.md)
+- [Syntax Reference](docs/spec/syntax.md) - Complete language specification
 
 ## Project Structure
 
