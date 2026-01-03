@@ -200,22 +200,57 @@ Defeat (card:_defeat, ring)
 
 ## Card Selection System
 
-Three priority-ordered pools:
+Four pools manage card availability:
 
 ```
-1. QUEUE (Priority 1)
-   └─ Immediate cards, added via `card:_id`
-   └─ FIFO order: first added = first shown
+┌─────────────────────────────────────────────────────────────────┐
+│  WHAT TO SHOW (Priority Order)                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  1. QUEUE                                                       │
+│     └─ Immediate cards, added via `card:_id`                    │
+│     └─ FIFO order: first added = first shown                    │
+│                                                                 │
+│  2. TIMEDEVENTS                                                 │
+│     └─ Scheduled cards, added via `card:_id@N`                  │
+│     └─ Counter decrements each turn                             │
+│     └─ Moves to QUEUE when counter reaches 0                    │
+│                                                                 │
+│  3. POOL                                                        │
+│     └─ All cards with `weight:` (non-ring)                      │
+│     └─ Filtered by `require:` conditions                        │
+│     └─ Selected randomly based on weights                       │
+├─────────────────────────────────────────────────────────────────┤
+│  WHAT CAN'T BE SHOWN                                            │
+├─────────────────────────────────────────────────────────────────┤
+│  4. LOCKTURN                                                    │
+│     └─ Recently shown cards, temporarily unavailable            │
+│     └─ Counter decrements each turn                             │
+│     └─ Returns to POOL when counter reaches 0                   │
+│     └─ `lockturn: once` → counter = ∞ (until reign ends)        │
+│     └─ `lockturn: dispose` → never returns (deleted)            │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-2. TIMEDEVENTS (Priority 2)
-   └─ Scheduled cards, added via `card:_id@N`
-   └─ Counter decrements each turn
-   └─ Shown when counter reaches 0
+### Turn Flow
 
-3. POOL (Priority 3)
-   └─ All cards with `weight:` (non-ring)
-   └─ Filtered by `require:` conditions
-   └─ Selected randomly based on weights
+```
+Each turn:
+  1. Decrement all TIMEDEVENTS counters
+     → Move cards with counter=0 to QUEUE
+
+  2. Decrement all LOCKTURN counters
+     → Move cards with counter=0 back to POOL
+
+  3. Select next card:
+     → If QUEUE not empty: pop first card
+     → Else: pick from POOL (weighted random, filtered by require)
+
+  4. Show card, player makes choice
+
+  5. Apply effects:
+     → If card has lockturn: move to LOCKTURN pool
+     → Process counter/flag changes
+     → Queue/schedule any cards from choice
 ```
 
 ## Comments
