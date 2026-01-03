@@ -198,60 +198,15 @@ Defeat (card:_defeat, ring)
 - Must have `ring` modifier
 - Can have `require`, `weight`, `lockturn` (used for branch selection)
 
-## Card Selection System
+## Card Selection (Summary)
 
-Four pools manage card availability:
+- Cards with `weight` go into the **pool** and are selected randomly
+- `card:id` queues a card to show immediately after current card
+- `card:id@N` schedules a card to appear after N turns
+- `lockturn` temporarily removes a card from the pool after showing
+- `require` conditions filter which cards are eligible
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  WHAT TO SHOW (Priority Order)                                  │
-├─────────────────────────────────────────────────────────────────┤
-│  1. QUEUE                                                       │
-│     └─ Immediate cards, added via `card:_id`                    │
-│     └─ FIFO order: first added = first shown                    │
-│                                                                 │
-│  2. TIMEDEVENTS                                                 │
-│     └─ Scheduled cards, added via `card:_id@N`                  │
-│     └─ Counter decrements each turn                             │
-│     └─ Moves to QUEUE when counter reaches 0                    │
-│                                                                 │
-│  3. POOL                                                        │
-│     └─ All cards with `weight:` (non-ring)                      │
-│     └─ Filtered by `require:` conditions                        │
-│     └─ Selected randomly based on weights                       │
-├─────────────────────────────────────────────────────────────────┤
-│  WHAT CAN'T BE SHOWN                                            │
-├─────────────────────────────────────────────────────────────────┤
-│  4. LOCKTURN                                                    │
-│     └─ Recently shown cards, temporarily unavailable            │
-│     └─ Counter decrements each turn                             │
-│     └─ Returns to POOL when counter reaches 0                   │
-│     └─ `lockturn: once` → counter = ∞ (until reign ends)        │
-│     └─ `lockturn: dispose` → never returns (deleted)            │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Turn Flow
-
-```
-Each turn:
-  1. Decrement all TIMEDEVENTS counters
-     → Move cards with counter=0 to QUEUE
-
-  2. Decrement all LOCKTURN counters
-     → Move cards with counter=0 back to POOL
-
-  3. Select next card:
-     → If QUEUE not empty: pop first card
-     → Else: pick from POOL (weighted random, filtered by require)
-
-  4. Show card, player makes choice
-
-  5. Apply effects:
-     → If card has lockturn: move to LOCKTURN pool
-     → Process counter/flag changes
-     → Queue/schedule any cards from choice
-```
+*For detailed runtime mechanics (pools, turn flow, etc.), see the runtime documentation.*
 
 ## Comments
 
