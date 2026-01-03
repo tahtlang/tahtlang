@@ -218,24 +218,24 @@ Defeat (card:_defeat, ring)
 ## Complete Example
 
 ```tahta
-# === SETTINGS ===
+# Settings
 Game Settings (settings:main)
 
-# === COUNTERS ===
+# Counters
 Treasury (counter:treasury, killer)
 Army (counter:army, killer)
 People (counter:people, killer)
 Church (counter:church, killer)
 
-# === FLAGS ===
+# Flags
 Game Start (flag:start)
 War Active (flag:war)
 
-# === CHARACTERS ===
+# Characters
 Advisor (character:advisor)
 General (character:general)
 
-# === CARDS ===
+# Cards
 
 Welcome (card:welcome)
     bearer: character:advisor

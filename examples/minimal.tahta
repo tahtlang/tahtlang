@@ -1,43 +1,26 @@
 # Minimal TahtLang Example
 # A simple kingdom management game
 
-# ==============================================================================
-# SETTINGS
-# ==============================================================================
-
+# Settings
 Game Settings (settings:main)
 
-# ==============================================================================
-# COUNTERS
-# ==============================================================================
-
-# Main resources - hitting 0 or 100 ends the game
+# Counters (hitting 0 or 100 ends the game)
 Treasury (counter:treasury, killer)
 Army (counter:army, killer)
 People (counter:people, killer)
 Church (counter:church, killer)
 
-# ==============================================================================
-# FLAGS
-# ==============================================================================
-
+# Flags
 Game Start (flag:start)
 War Active (flag:war)
 
-# ==============================================================================
-# CHARACTERS
-# ==============================================================================
-
+# Characters
 Advisor (character:advisor)
 General (character:general)
 Priest (character:priest)
 Merchant (character:merchant)
 
-# ==============================================================================
-# CARDS
-# ==============================================================================
-
-# --- Introduction ---
+# Cards
 
 Welcome (card:welcome)
     bearer: character:advisor
@@ -52,8 +35,6 @@ First Decision (card:_first_decision, ring)
     > Your treasury needs attention. What shall we do?
     * Raise taxes: counter:treasury 20, counter:people -10
     * Cut spending: counter:treasury 10, counter:army -10
-
-# --- Regular Cards ---
 
 Tax Proposal (card:tax-proposal)
     bearer: character:merchant
@@ -80,8 +61,6 @@ Church Donation (card:church-donation)
     * Donate generously: counter:church 20, counter:treasury -25
     * A modest gift: counter:church 5, counter:treasury -5
     * Decline: counter:church -15
-
-# --- War Event Chain ---
 
 War Declaration (card:war-declaration)
     bearer: character:general
