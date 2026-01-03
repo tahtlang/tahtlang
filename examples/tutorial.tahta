@@ -1,0 +1,335 @@
+# TahtLang Tutorial
+# Learn TahtLang by building a complete game
+
+# =============================================================================
+# PART 1: ENTITIES
+# =============================================================================
+
+#
+# Her oyun entity tanımlarıyla başlar. Entity'ler oyunun yapı taşlarıdır:
+# counter'lar, flag'ler, karakterler, vb.
+#
+# Format: DisplayName (type:id, ...modifiers)
+#
+# "type:id" formatı önemli - bu sayede LSP autocomplete çalışır ve
+# referanslar açık olur. "treasury" yerine "counter:treasury" yazarsın.
+#
+
+# Settings - Her oyunda bir settings entity olmalı
+Game Settings (settings:main)
+
+#
+# Counter'lar 0-100 arası değer tutan sayaçlardır.
+# "killer" modifier'ı: 0 veya 100'e ulaşınca oyun biter.
+# Reigns'teki dört ana metrik gibi düşün.
+#
+
+Treasury (counter:treasury, killer)
+Army (counter:army, killer)
+People (counter:people, killer)
+Faith (counter:faith, killer)
+
+#
+# "keep" modifier'ı: Kral ölünce sıfırlanmaz, sonraki saltanata geçer.
+# Örneğin bir yapı inşa ettiysen, yeni kralla da durur.
+#
+
+Cathedral Built (counter:cathedral, keep)
+
+#
+# Flag'ler boolean değerlerdir: ya var ya yok.
+# Oyun durumunu takip etmek için kullanılır.
+#
+
+Game Start (flag:start)
+War Active (flag:war)
+Plague (flag:plague)
+
+#
+# Variant'lar karakter görünümlerini değiştirir.
+# Aynı karakter farklı duygu/durum ile görünebilir.
+#
+
+Angry (variant:angry)
+Worried (variant:worried)
+Happy (variant:happy)
+
+#
+# Character'lar kartları sunan kişilerdir.
+# Her kartın bir bearer'ı (taşıyıcı) olmalı.
+#
+
+Advisor (character:advisor)
+General (character:general)
+Priest (character:priest)
+Merchant (character:merchant)
+Doctor (character:doctor)
+
+# =============================================================================
+# PART 2: INTRO CARDS
+# =============================================================================
+
+#
+# Oyun başladığında gösterilecek kartlar.
+# "require: flag:start" sadece oyun başında gösterir.
+# "lockturn: dispose" kartı bir kez gösterip siler - bir daha gelmez.
+#
+# weight: 100 çok yüksek - bu kart kesinlikle seçilir.
+#
+
+Welcome (card:welcome)
+    bearer: character:advisor
+    weight: 100
+    require: flag:start
+    lockturn: dispose
+    > Welcome to the throne, Your Majesty. The kingdom awaits your wisdom.
+    * I am ready to rule: -flag:start, card:_tutorial_1
+
+#
+# Ring kartlar (card:_xxx, ring) queue'dan gelir, pool'dan rastgele seçilmez.
+# ID'nin başındaki _ prefix zorunlu.
+# card:_tutorial_1 komutu bu kartı queue'ya ekler, hemen sonra gösterilir.
+#
+
+Tutorial 1 (card:_tutorial_1, ring)
+    bearer: character:advisor
+    > Swipe left or right to make decisions. Each choice affects your kingdom.
+    * I understand: card:_tutorial_2
+
+Tutorial 2 (card:_tutorial_2, ring)
+    bearer: character:advisor
+    > Keep all four pillars balanced. If any reaches zero or maximum, your reign ends.
+    * Show me the pillars: card:_tutorial_3
+
+#
+# Variant kullanımı: character:advisor (variant:happy)
+# Aynı karakter farklı duygu ile görünür.
+#
+
+Tutorial 3 (card:_tutorial_3, ring)
+    bearer: character:advisor (variant:happy)
+    > Treasury, Army, People, Faith. Balance them wisely, Your Majesty.
+    * Let us begin:
+
+# =============================================================================
+# PART 3: REGULAR CARDS
+# =============================================================================
+
+#
+# Normal kartlar weight'e göre rastgele seçilir.
+# weight: 1.0 standart ağırlık
+# weight: 2.0 when counter:treasury < 30 - koşullu ağırlık
+#   Bu kart treasury düşükken 2x daha sık gelir.
+#
+# lockturn: 10 - gösterildikten sonra 10 tur bekler, sonra pool'a döner.
+#
+
+Tax Collection (card:tax-collection)
+    bearer: character:merchant
+    weight: 1.0
+    weight: 2.0 when counter:treasury < 30
+    lockturn: 10
+    > The treasury runs low, Your Majesty. Shall we raise taxes?
+    * Raise taxes: counter:treasury 25, counter:people -15
+    * Keep current rates: counter:treasury -5
+
+#
+# Birden fazla efekt virgülle ayrılır.
+# counter:treasury -20 -> treasury'den 20 çıkar
+# counter:army 15 -> army'ye 15 ekler (işaret önemli!)
+#
+
+Military Funding (card:military-funding)
+    bearer: character:general
+    weight: 1.0
+    lockturn: 8
+    > Our soldiers need better equipment, Your Majesty.
+    * Fund the army: counter:treasury -20, counter:army 15
+    * The army is fine: counter:army -10
+
+#
+# Üç seçenekli kart - choice sayısı sınırsız.
+#
+
+Church Donation (card:church-donation)
+    bearer: character:priest
+    weight: 1.0
+    lockturn: 12
+    > The church requests a donation for the poor, Your Majesty.
+    * Generous donation: counter:treasury -25, counter:faith 20, counter:people 5
+    * Modest donation: counter:treasury -10, counter:faith 5
+    * Decline: counter:faith -15
+
+# =============================================================================
+# PART 4: CONDITIONAL CARDS
+# =============================================================================
+
+#
+# require: koşulu sağlanmadıkça kart pool'da görünmez.
+# !flag:war -> war flag'i OLMAMALI
+# counter:army > 40 -> army 40'tan büyük olmalı
+# Birden fazla koşul virgülle (AND mantığı)
+#
+
+War Declaration (card:war-declaration)
+    bearer: character:general (variant:worried)
+    weight: 0.5
+    require: !flag:war, counter:army > 40
+    lockturn: 30
+    > A neighboring kingdom masses troops at our border!
+    * Prepare for war: +flag:war, counter:army -10, card:_war_battle@5
+    * Negotiate peace: counter:treasury -30, counter:people 10
+
+#
+# +flag:war -> war flag'ini aktif et
+# card:_war_battle@5 -> _war_battle kartını 5 tur sonra göster
+#   Bu TIMEDEVENTS pool'una gider, her tur sayaç azalır, 0'da QUEUE'ya geçer.
+#
+
+# =============================================================================
+# PART 5: EVENT CHAINS (RING CARDS)
+# =============================================================================
+
+#
+# Ring kartlar hikaye zincirleri oluşturur.
+# Pool'dan rastgele seçilmezler - sadece queue/schedule ile gelirler.
+#
+
+War Battle (card:_war_battle, ring)
+    bearer: character:general
+    require: flag:war
+    > The battle rages! What are your orders, Your Majesty?
+    * Full attack: counter:army -20?-10, [card:_war_victory, card:_war_defeat]
+    * Defensive position: counter:army -5, card:_war_stalemate
+
+#
+# counter:army -20?-10 -> rastgele -20 ile -10 arası
+#   (Dikkat: -20, -15, -10 gibi negatif değerler)
+#
+# [card:_war_victory, card:_war_defeat] -> BRANCH syntax
+#   Runtime sırayla bakar, require'ı geçen ilk kartı seçer.
+#   _war_victory: require: counter:army > 25
+#   _war_defeat: require: counter:army <= 25
+#   Yani army durumuna göre biri seçilir.
+#
+
+War Victory (card:_war_victory, ring)
+    bearer: character:general (variant:happy)
+    require: counter:army > 25
+    > Victory! The enemy retreats in disgrace!
+    * Celebrate: -flag:war, counter:people 20, counter:treasury 30
+
+War Defeat (card:_war_defeat, ring)
+    bearer: character:general (variant:worried)
+    require: counter:army <= 25
+    > We have lost... Our forces are decimated.
+    * Accept defeat: -flag:war, counter:army -20, counter:people -15, counter:treasury -20
+
+War Stalemate (card:_war_stalemate, ring)
+    bearer: character:general
+    require: flag:war
+    > Neither side gains ground. The war drags on.
+    * Continue fighting: card:_war_battle@3
+    * Negotiate peace: -flag:war, counter:treasury -25
+
+# =============================================================================
+# PART 6: SPECIAL EVENTS
+# =============================================================================
+
+#
+# lockturn: once -> Bu saltanat boyunca bir kez gösterilir.
+#   Kral ölünce sıfırlanır, yeni saltanatta tekrar gelebilir.
+#
+
+Plague Outbreak (card:plague-outbreak)
+    bearer: character:doctor
+    weight: 0.3
+    require: !flag:plague
+    lockturn: once
+    > A terrible plague spreads through the city, Your Majesty!
+    * Quarantine the sick: +flag:plague, counter:people -10, counter:treasury -15, card:_plague_progress@10
+    * Pray for salvation: +flag:plague, counter:faith 10, counter:people -20, card:_plague_progress@8
+
+Plague Progress (card:_plague_progress, ring)
+    bearer: character:doctor
+    require: flag:plague
+    > The plague continues. What shall we do?
+    * Burn the infected houses: counter:treasury -20, counter:people -5, [card:_plague_end, card:_plague_worse]
+    * Wait and pray: counter:faith 5, [card:_plague_end, card:_plague_worse]
+
+Plague Ends (card:_plague_end, ring)
+    bearer: character:doctor (variant:happy)
+    require: counter:people > 30
+    > The plague has passed! The survivors celebrate.
+    * Thank the heavens: -flag:plague, counter:faith 15, counter:people 5
+
+Plague Worsens (card:_plague_worse, ring)
+    bearer: character:doctor (variant:worried)
+    require: counter:people <= 30
+    > The plague worsens. Bodies fill the streets.
+    * Desperate measures: -flag:plague, counter:people -15, counter:treasury -10
+
+# =============================================================================
+# PART 7: LONG-TERM PROJECTS
+# =============================================================================
+
+#
+# card:_cathedral_complete@20 -> 20 tur sonra tamamlanır
+# counter:cathedral (keep) -> Kral ölse de kalır
+#
+
+Cathedral Construction (card:cathedral-start)
+    bearer: character:priest
+    weight: 0.5
+    require: counter:treasury > 50, counter:cathedral = 0
+    lockturn: dispose
+    > Your Majesty, shall we build a grand cathedral to honor the gods?
+    * Begin construction: counter:treasury -40, counter:faith 10, card:_cathedral_complete@20
+    * Perhaps another time: counter:faith -5
+
+Cathedral Complete (card:_cathedral_complete, ring)
+    bearer: character:priest (variant:happy)
+    > The cathedral is complete! Its spires reach toward the heavens!
+    * Celebrate: counter:cathedral 1, counter:faith 30, counter:people 15
+
+#
+# counter:cathedral = 0 -> Sadece henüz yapılmamışsa göster
+# counter:cathedral 1 -> Yapıldı olarak işaretle
+# "keep" modifier sayesinde sonraki saltanatlarda da cathedral = 1 kalır.
+#
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+#
+# Bu tutorial'da öğrendiklerimiz:
+#
+# ENTITIES:
+#   - counter:id, killer, keep
+#   - flag:id, keep
+#   - character:id
+#   - variant:id
+#
+# CARD STRUCTURE:
+#   - bearer: character:name (variant:emotion)
+#   - require: conditions (flag, counter comparisons)
+#   - weight: N, weight: N when conditions
+#   - lockturn: N | once | dispose
+#   - > Card text
+#   - * Choice: effects
+#
+# EFFECTS:
+#   - counter:id N (add/subtract)
+#   - counter:id A?B (random range)
+#   - +flag:id / -flag:id
+#   - card:id (queue immediately)
+#   - card:id@N (schedule for N turns)
+#   - [card:a, card:b] (branch - first matching require)
+#
+# RING CARDS:
+#   - ID starts with _ prefix
+#   - Has "ring" modifier
+#   - Only appears via queue/schedule
+#   - Used for event chains and story branches
+#
