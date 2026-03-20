@@ -23,8 +23,29 @@ class LineType(Enum):
     CHOICE = auto()          # * label: commands
 
 
-# Known entity types for header detection
-ENTITY_TYPES = {'settings', 'counter', 'flag', 'variant', 'character', 'card'}
+class EntityType(Enum):
+    """Entity types in TahtaScript."""
+    SETTINGS = "settings"
+    COUNTER = "counter"
+    FLAG = "flag"
+    VARIANT = "variant"
+    CHARACTER = "character"
+    CARD = "card"
+
+
+# Lookup: string -> EntityType (for header detection)
+ENTITY_TYPE_MAP: dict[str, EntityType] = {e.value: e for e in EntityType}
+
+
+class Modifier(Enum):
+    """Entity modifiers in TahtaScript."""
+    KILLER = "killer"
+    KEEP = "keep"
+    RING = "ring"
+
+
+# Lookup: string -> Modifier
+MODIFIER_MAP: dict[str, Modifier] = {m.value: m for m in Modifier}
 
 
 @dataclass
@@ -38,9 +59,9 @@ class Line:
     # Extracted parts (depending on type)
     import_path: Optional[str] = None    # for IMPORT: "path/to/file.tahta"
     entity_name: Optional[str] = None    # for ENTITY_HEADER: "Yeniceri Ağası"
-    entity_type: Optional[str] = None    # for ENTITY_HEADER: "character"
-    entity_id: Optional[str] = None      # for ENTITY_HEADER: "yeniceri-agasi"
-    entity_flags: Optional[list[str]] = None  # for ENTITY_HEADER: ["killer"]
+    entity_type: Optional[EntityType] = None    # for ENTITY_HEADER: EntityType.CHARACTER
+    entity_id: Optional[str] = None              # for ENTITY_HEADER: "yeniceri_agasi"
+    entity_modifiers: Optional[set[Modifier]] = None  # for ENTITY_HEADER: {Modifier.KILLER}
     key: Optional[str] = None            # for PROPERTY
     value: Optional[str] = None          # for PROPERTY, PRIMARY_VALUE, INDENTED
     choice_label: Optional[str] = None   # for CHOICE
@@ -206,17 +227,25 @@ class Lexer:
 
                 if parts and ':' in parts[0]:
                     type_id = parts[0].split(':', 1)
-                    entity_type = type_id[0].lower()
+                    type_str = type_id[0].lower()
                     entity_id = type_id[1] if len(type_id) > 1 else None
-                    flags = parts[1:] if len(parts) > 1 else []
+                    raw_flags = parts[1:] if len(parts) > 1 else []
 
-                    if entity_type in ENTITY_TYPES:
+                    entity_type = ENTITY_TYPE_MAP.get(type_str)
+                    if entity_type is not None:
+                        # Normalize modifiers: lowercase + convert to enum
+                        modifiers: set[Modifier] = set()
+                        for f in raw_flags:
+                            mod = MODIFIER_MAP.get(f.strip().lower())
+                            if mod is not None:
+                                modifiers.add(mod)
+
                         return Line(
                             LineType.ENTITY_HEADER, raw, line_number, indent,
                             entity_name=name,
                             entity_type=entity_type,
                             entity_id=entity_id,
-                            entity_flags=flags
+                            entity_modifiers=modifiers
                         )
 
         # Property: key: value - MUST be indented

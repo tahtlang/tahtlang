@@ -8,7 +8,7 @@ for readability and debuggability.
 from pathlib import Path
 from typing import Optional
 
-from .lexer import Lexer, Line, LineType
+from .lexer import Lexer, Line, LineType, EntityType, Modifier
 from .ast import (
     Game, Settings, Counter, Flag, Variant, Character, Card,
     Choice, Bearer, Weight, SourceLocation, Import,
@@ -123,23 +123,23 @@ class Parser:
         """Parse an entity (card, character, counter, etc.)."""
         header = self._current()
         entity_type = header.entity_type
-        entity_name = header.entity_name
-        entity_id = header.entity_id
-        entity_flags = header.entity_flags or []
+        entity_name = header.entity_name or ""
+        entity_id = header.entity_id or ""
+        modifiers = header.entity_modifiers or set()
         self._advance()
 
-        if entity_type == "settings":
+        if entity_type == EntityType.SETTINGS:
             self._parse_settings(entity_name, entity_id, header)
-        elif entity_type == "counter":
-            self._parse_counter(entity_name, entity_id, entity_flags, header)
-        elif entity_type == "flag":
-            self._parse_flag(entity_name, entity_id, entity_flags, header)
-        elif entity_type == "variant":
+        elif entity_type == EntityType.COUNTER:
+            self._parse_counter(entity_name, entity_id, modifiers, header)
+        elif entity_type == EntityType.FLAG:
+            self._parse_flag(entity_name, entity_id, modifiers, header)
+        elif entity_type == EntityType.VARIANT:
             self._parse_variant(entity_name, entity_id, header)
-        elif entity_type == "character":
+        elif entity_type == EntityType.CHARACTER:
             self._parse_character(entity_name, entity_id, header)
-        elif entity_type == "card":
-            self._parse_card(entity_name, entity_id, entity_flags, header)
+        elif entity_type == EntityType.CARD:
+            self._parse_card(entity_name, entity_id, modifiers, header)
         else:
             raise self._error(f"Unknown entity type: {entity_type}", header)
 
@@ -177,7 +177,23 @@ class Parser:
             loc=self._make_loc(header)
         )
 
-    def _parse_counter(self, name: str, entity_id: str, flags: list[str], header: Line):
+    # Lookup tables for string -> enum conversion
+    AGGREGATE_MAP = {
+        "average": AggregateType.AVERAGE,
+        "sum": AggregateType.SUM,
+        "min": AggregateType.MIN,
+        "max": AggregateType.MAX,
+    }
+    TRACK_MAP = {
+        "yes": TrackType.YES,
+        "no": TrackType.NO,
+    }
+    LOCKTURN_MAP = {
+        "once": LOCKTURN_ONCE,
+        "dispose": LOCKTURN_DISPOSE,
+    }
+
+    def _parse_counter(self, name: str, entity_id: str, modifiers: set[Modifier], header: Line):
         """Parse a counter entity. Primary field: start value
 
         Regular counter:
@@ -203,37 +219,14 @@ class Parser:
         except ValueError:
             start = 50
 
-        # Check for flags in header
-        flags_lower = [f.lower() for f in flags]
-        killer = "killer" in flags_lower
-        keep = "keep" in flags_lower
-
         # Parse source list (for virtual counters)
         source: tuple[str, ...] = ()
         if "source" in props:
             source = tuple(self._parse_reference_list(props["source"]))
 
-        # Parse aggregate type
-        aggregate: Optional[AggregateType] = None
-        if "aggregate" in props:
-            agg_str = props["aggregate"].lower().strip()
-            if agg_str == "average":
-                aggregate = AggregateType.AVERAGE
-            elif agg_str == "sum":
-                aggregate = AggregateType.SUM
-            elif agg_str == "min":
-                aggregate = AggregateType.MIN
-            elif agg_str == "max":
-                aggregate = AggregateType.MAX
-
-        # Parse track type
-        track: Optional[TrackType] = None
-        if "track" in props:
-            track_str = props["track"].lower().strip()
-            if track_str == "yes":
-                track = TrackType.YES
-            elif track_str == "no":
-                track = TrackType.NO
+        # Parse aggregate and track types via lookup
+        aggregate = self.AGGREGATE_MAP.get(props.get("aggregate", "").lower().strip())
+        track = self.TRACK_MAP.get(props.get("track", "").lower().strip())
 
         counter = Counter(
             id=entity_id,
@@ -241,8 +234,8 @@ class Parser:
             icon=props.get("icon", ""),
             start=start,
             color=props.get("color", ""),
-            killer=killer,
-            keep=keep,
+            killer=Modifier.KILLER in modifiers,
+            keep=Modifier.KEEP in modifiers,
             source=source,
             aggregate=aggregate,
             track=track,
@@ -250,13 +243,9 @@ class Parser:
         )
         self._counters.append(counter)
 
-    def _parse_flag(self, name: str, entity_id: str, flags: list[str], header: Line):
+    def _parse_flag(self, name: str, entity_id: str, modifiers: set[Modifier], header: Line):
         """Parse a flag entity."""
         props = self._collect_properties()
-
-        # Check for keep flag in header
-        flags_lower = [f.lower() for f in flags]
-        keep = "keep" in flags_lower
 
         # Parse bind property (strip character: prefix if present)
         bind = None
@@ -267,7 +256,7 @@ class Parser:
             id=entity_id,
             name=name,
             bind=bind,
-            keep=keep,
+            keep=Modifier.KEEP in modifiers,
             loc=self._make_loc(header)
         )
         self._flags.append(flag)
@@ -296,7 +285,7 @@ class Parser:
         )
         self._characters.append(character)
 
-    def _parse_card(self, name: str, entity_id: str, flags: list[str], header: Line):
+    def _parse_card(self, name: str, entity_id: str, modifiers: set[Modifier], header: Line):
         """Parse a card entity. Primary field: text"""
         bearer: Optional[Bearer] = None
         text: str = ""
@@ -304,10 +293,6 @@ class Parser:
         weights: list[Weight] = []
         lockturn: Lockturn = None
         choices: list[Choice] = []
-
-        # Check for ring flag in header
-        flags_lower = [f.lower() for f in flags]
-        ring = "ring" in flags_lower
 
         while not self._eof():
             line = self._current()
@@ -326,47 +311,19 @@ class Parser:
                 continue
 
             if line.type == LineType.CHOICE:
-                choice = self._parse_choice(line)
-                choices.append(choice)
+                choices.append(self._parse_choice(line))
                 self._advance()
                 continue
 
             if line.type == LineType.PROPERTY:
-                key = line.key
-                value = line.value or ""
-
-                if key == "bearer":
-                    bearer = self._parse_bearer(value, line)
-
-                elif key == "require":
-                    require = self._parse_condition_list(value, line)
-
-                elif key == "weight":
-                    if value:
-                        weight = self._parse_weight_line(value, line)
-                        if weight:
-                            weights.append(weight)
-
-                elif key == "lockturn":
-                    value_lower = value.lower().strip()
-                    if value_lower == "once":
-                        lockturn = LOCKTURN_ONCE
-                    elif value_lower == "dispose":
-                        lockturn = LOCKTURN_DISPOSE
-                    else:
-                        try:
-                            lockturn = int(value)
-                        except ValueError:
-                            raise self._error(
-                                f"Invalid lockturn value: '{value}' (must be integer, 'once', or 'dispose')",
-                                line
-                            )
-
+                bearer, require, weights, lockturn = self._parse_card_property(
+                    line, bearer, require, weights, lockturn
+                )
                 self._advance()
                 continue
 
             if line.type == LineType.INDENTED:
-                weight = self._parse_weight_line(line.value, line)
+                weight = self._parse_weight_line(line.value or "", line)
                 if weight:
                     weights.append(weight)
                 self._advance()
@@ -383,10 +340,48 @@ class Parser:
             weights=tuple(weights),
             lockturn=lockturn,
             choices=tuple(choices),
-            ring=ring,
+            ring=Modifier.RING in modifiers,
             loc=self._make_loc(header)
         )
         self._cards.append(card)
+
+    def _parse_card_property(
+        self,
+        line: Line,
+        bearer: Optional[Bearer],
+        require: list[Condition],
+        weights: list[Weight],
+        lockturn: Lockturn,
+    ) -> tuple[Optional[Bearer], list[Condition], list[Weight], Lockturn]:
+        """Parse a single card property line. Returns updated values."""
+        key = line.key
+        value = line.value or ""
+
+        if key == "bearer":
+            bearer = self._parse_bearer(value, line)
+        elif key == "require":
+            require = self._parse_condition_list(value, line)
+        elif key == "weight" and value:
+            weight = self._parse_weight_line(value, line)
+            if weight:
+                weights.append(weight)
+        elif key == "lockturn":
+            lockturn = self._parse_lockturn(value, line)
+
+        return bearer, require, weights, lockturn
+
+    def _parse_lockturn(self, value: str, line: Line) -> Lockturn:
+        """Parse lockturn value: integer, 'once', or 'dispose'."""
+        special = self.LOCKTURN_MAP.get(value.lower().strip())
+        if special is not None:
+            return special
+        try:
+            return int(value)
+        except ValueError:
+            raise self._error(
+                f"Invalid lockturn value: '{value}' (must be integer, 'once', or 'dispose')",
+                line
+            )
 
     def _parse_choice(self, line: Line) -> Choice:
         """Parse a choice line."""

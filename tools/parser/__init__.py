@@ -14,7 +14,7 @@ from .ast import (
     AggregateType, TrackType,
     LOCKTURN_ONCE, LOCKTURN_DISPOSE,
 )
-from .lexer import Lexer
+from .lexer import Lexer, EntityType, Modifier
 from .parser import Parser
 from .validator import Validator, ValidationResult, validate_game, resolve_imports, validate_with_imports
 from .errors import ParseError, ValidationError

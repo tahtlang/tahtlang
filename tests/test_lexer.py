@@ -2,7 +2,7 @@
 
 import pytest
 
-from tools.parser.lexer import Lexer, Line, LineType
+from tools.parser.lexer import Lexer, Line, LineType, EntityType, Modifier
 from tools.parser.errors import ParseError
 
 
@@ -86,45 +86,45 @@ class TestEntityHeaders:
         line = lines[0]
         assert line.type == LineType.ENTITY_HEADER
         assert line.entity_name == "Treasury"
-        assert line.entity_type == "counter"
+        assert line.entity_type == EntityType.COUNTER
         assert line.entity_id == "treasury"
-        assert line.entity_flags == ["killer"]
+        assert line.entity_modifiers == {Modifier.KILLER}
 
-    def test_counter_with_multiple_flags(self):
+    def test_counter_with_multiple_modifiers(self):
         lines = lex_content("Gold (counter:gold, killer, keep)")
         line = lines[0]
-        assert line.entity_flags == ["killer", "keep"]
+        assert line.entity_modifiers == {Modifier.KILLER, Modifier.KEEP}
 
-    def test_character_no_flags(self):
+    def test_character_no_modifiers(self):
         lines = lex_content("Grand Vizier (character:vizier)")
         line = lines[0]
-        assert line.entity_type == "character"
+        assert line.entity_type == EntityType.CHARACTER
         assert line.entity_id == "vizier"
-        assert line.entity_flags == []
+        assert line.entity_modifiers == set()
 
     def test_card_with_ring(self):
         lines = lex_content("War Battle (card:_war_battle, ring)")
         line = lines[0]
-        assert line.entity_type == "card"
+        assert line.entity_type == EntityType.CARD
         assert line.entity_id == "_war_battle"
-        assert line.entity_flags == ["ring"]
+        assert line.entity_modifiers == {Modifier.RING}
 
     def test_settings(self):
         lines = lex_content("Game Settings (settings:main)")
         line = lines[0]
-        assert line.entity_type == "settings"
+        assert line.entity_type == EntityType.SETTINGS
         assert line.entity_id == "main"
 
     def test_flag_entity(self):
         lines = lex_content("War Active (flag:war)")
         line = lines[0]
-        assert line.entity_type == "flag"
+        assert line.entity_type == EntityType.FLAG
         assert line.entity_id == "war"
 
     def test_variant_entity(self):
         lines = lex_content("Angry (variant:angry)")
         line = lines[0]
-        assert line.entity_type == "variant"
+        assert line.entity_type == EntityType.VARIANT
         assert line.entity_id == "angry"
 
     def test_entity_name_with_spaces(self):
