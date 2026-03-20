@@ -25,12 +25,27 @@ class TahtaLanguageServer(LanguageServer):
         super().__init__("tahta-lsp", "v0.1")
         # Cached game data per workspace
         self.games: dict[str, Game] = {}
+        # Entity lookup dicts: {uri: {"characters": {...}, ...}}
+        self.entity_dicts: dict[str, dict[str, dict]] = {}
         # Entity locations: {uri: {entity_id: (line, col)}}
         self.entity_locations: dict[str, dict[str, tuple[int, int]]] = {}
 
     def get_game(self, uri: str) -> Optional[Game]:
         """Get cached game for a document."""
         return self.games.get(uri)
+
+    @staticmethod
+    def _make_diagnostic(line: int, message: str) -> lsp.Diagnostic:
+        """Create a diagnostic object."""
+        return lsp.Diagnostic(
+            range=lsp.Range(
+                start=lsp.Position(line=line, character=0),
+                end=lsp.Position(line=line, character=79),
+            ),
+            message=message,
+            severity=lsp.DiagnosticSeverity.Error,
+            source="tahta",
+        )
 
     def parse_document(self, uri: str, source: str) -> list[lsp.Diagnostic]:
         """Parse document and return diagnostics."""
@@ -41,6 +56,15 @@ class TahtaLanguageServer(LanguageServer):
             game = parser.parse_string(source, uri)
             self.games[uri] = game
 
+            # Cache entity lookups
+            self.entity_dicts[uri] = {
+                "characters": {c.id: c for c in game.characters},
+                "variants": {v.id: v for v in game.variants},
+                "counters": {c.id: c for c in game.counters},
+                "flags": {f.id: f for f in game.flags},
+                "cards": {c.id: c for c in game.cards},
+            }
+
             # Build entity location index
             self._index_entities(uri, source, game)
 
@@ -50,17 +74,7 @@ class TahtaLanguageServer(LanguageServer):
         except ParseError as e:
             # Create diagnostic from parse error
             line = e.location.line - 1 if e.location else 0
-            diagnostics.append(
-                lsp.Diagnostic(
-                    range=lsp.Range(
-                        start=lsp.Position(line=line, character=0),
-                        end=lsp.Position(line=line, character=100),
-                    ),
-                    message=e.message,
-                    severity=lsp.DiagnosticSeverity.Error,
-                    source="tahta",
-                )
-            )
+            diagnostics.append(self._make_diagnostic(line, e.message))
 
         return diagnostics
 
@@ -86,18 +100,7 @@ class TahtaLanguageServer(LanguageServer):
         for error in result.errors:
             # Get line number from error location
             line = error.location.line - 1 if error.location else 0
-
-            diagnostics.append(
-                lsp.Diagnostic(
-                    range=lsp.Range(
-                        start=lsp.Position(line=line, character=0),
-                        end=lsp.Position(line=line, character=100),
-                    ),
-                    message=error.message,
-                    severity=lsp.DiagnosticSeverity.Error,
-                    source="tahta",
-                )
-            )
+            diagnostics.append(self._make_diagnostic(line, error.message))
 
         return diagnostics
 
@@ -108,7 +111,7 @@ class TahtaLanguageServer(LanguageServer):
         document = self.workspace.get_text_document(uri)
         game = self.get_game(uri)
 
-        if not game:
+        if not game or uri not in self.entity_dicts:
             return []
 
         try:
@@ -122,12 +125,13 @@ class TahtaLanguageServer(LanguageServer):
 
         items = []
 
-        # Build lookup dicts for easy access
-        characters = {c.id: c for c in game.characters}
-        variants = {v.id: v for v in game.variants}
-        counters = {c.id: c for c in game.counters}
-        flags = {f.id: f for f in game.flags}
-        cards = {c.id: c for c in game.cards}
+        # Use cached lookup dicts
+        dicts = self.entity_dicts[uri]
+        characters = dicts["characters"]
+        variants = dicts["variants"]
+        counters = dicts["counters"]
+        flags = dicts["flags"]
+        cards = dicts["cards"]
 
         # After "character:" suggest character IDs
         if "character:" in stripped and not stripped.endswith("character:"):
@@ -363,19 +367,20 @@ class TahtaLanguageServer(LanguageServer):
         document = self.workspace.get_text_document(uri)
         game = self.get_game(uri)
 
-        if not game:
+        if not game or uri not in self.entity_dicts:
             return None
 
         word = document.word_at_position(position)
         if not word:
             return None
 
-        # Build lookup dicts
-        characters = {c.id: c for c in game.characters}
-        variants = {v.id: v for v in game.variants}
-        counters = {c.id: c for c in game.counters}
-        flags = {f.id: f for f in game.flags}
-        cards = {c.id: c for c in game.cards}
+        # Use cached lookup dicts
+        dicts = self.entity_dicts[uri]
+        characters = dicts["characters"]
+        variants = dicts["variants"]
+        counters = dicts["counters"]
+        flags = dicts["flags"]
+        cards = dicts["cards"]
 
         # Check if it's a character
         if word in characters:
@@ -478,16 +483,20 @@ server = TahtaLanguageServer()
 # ============================================================================
 
 
+def _publish_diagnostics(ls: TahtaLanguageServer, uri: str, source: str):
+    """Common logic for diagnostic publishing."""
+    diagnostics = ls.parse_document(uri, source)
+    ls.text_document_publish_diagnostics(
+        lsp.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
+    )
+
+
 @server.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
 def did_open(ls: TahtaLanguageServer, params: lsp.DidOpenTextDocumentParams):
     """Handle document open."""
     uri = params.text_document.uri
     source = params.text_document.text
-
-    diagnostics = ls.parse_document(uri, source)
-    ls.text_document_publish_diagnostics(
-        lsp.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
-    )
+    _publish_diagnostics(ls, uri, source)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
@@ -497,12 +506,7 @@ def did_change(
     """Handle document change."""
     uri = params.text_document.uri
     document = ls.workspace.get_text_document(uri)
-    source = document.source
-
-    diagnostics = ls.parse_document(uri, source)
-    ls.text_document_publish_diagnostics(
-        lsp.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
-    )
+    _publish_diagnostics(ls, uri, document.source)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_SAVE)
@@ -510,12 +514,7 @@ def did_save(ls: TahtaLanguageServer, params: lsp.DidSaveTextDocumentParams):
     """Handle document save."""
     uri = params.text_document.uri
     document = ls.workspace.get_text_document(uri)
-    source = document.source
-
-    diagnostics = ls.parse_document(uri, source)
-    ls.text_document_publish_diagnostics(
-        lsp.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
-    )
+    _publish_diagnostics(ls, uri, document.source)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_CLOSE)
@@ -523,6 +522,7 @@ def did_close(ls: TahtaLanguageServer, params: lsp.DidCloseTextDocumentParams):
     """Handle document close - clean up cached data."""
     uri = params.text_document.uri
     ls.games.pop(uri, None)
+    ls.entity_dicts.pop(uri, None)
     ls.entity_locations.pop(uri, None)
 
 

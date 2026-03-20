@@ -38,11 +38,13 @@ from .ast import (
     Game,
     Import,
     Lockturn,
+    Operator,
     RangeValue,
     Settings,
     SourceLocation,
     TrackType,
     Trigger,
+    TriggerType,
     ValueOrRange,
     Variant,
     Weight,
@@ -648,8 +650,16 @@ class Parser:
         if " " not in rest:
             return None
         space_pos = rest.index(" ")
-        trigger_type = rest[:space_pos].strip()
+        trigger_type_str = rest[:space_pos].strip()
         value = self._strip_quotes(rest[space_pos + 1 :].strip())
+
+        try:
+            trigger_type = TriggerType(trigger_type_str)
+        except ValueError:
+            raise self._error(
+                f"Unknown trigger type: '{trigger_type_str}'", line
+            )
+
         return Trigger(
             trigger_type=trigger_type, value=value, loc=self._make_loc(line)
         )
@@ -806,7 +816,7 @@ class Parser:
         return conditions
 
     # Operators ordered longest first for greedy matching
-    CONDITION_OPERATORS = ("<=", ">=", "<", ">", "=")
+    CONDITION_OPERATORS = tuple(op.value for op in Operator)
 
     def _parse_single_condition(
         self, part: str, line: Line
@@ -846,19 +856,19 @@ class Parser:
         'counter:army >= 50'    -> CounterCondition('army', '>=', 50)
         'flag:war'              -> None (not a counter condition)
         """
-        for op in self.CONDITION_OPERATORS:
-            if op not in part:
+        for op_str in self.CONDITION_OPERATORS:
+            if op_str not in part:
                 continue
-            op_pos = part.index(op)
+            op_pos = part.index(op_str)
             if op_pos == 0:
                 continue
             left = part[:op_pos].strip()
-            right = part[op_pos + len(op) :].strip()
+            right = part[op_pos + len(op_str) :].strip()
             counter_id = self._strip_type_prefix(left, "counter")
             try:
                 return CounterCondition(
                     counter_id=counter_id,
-                    operator=op,
+                    operator=Operator(op_str),
                     value=int(right),
                     loc=loc,
                 )

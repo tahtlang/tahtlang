@@ -50,7 +50,7 @@ def game_to_dict(game: Game) -> dict:
                 "min": val.min_value,
                 "max": val.max_value,
             }
-        return None
+        raise ValueError(f"Unknown value type: {type(val)}")
 
     def command_to_dict(cmd) -> dict:
         if isinstance(cmd, CounterMod):
@@ -76,10 +76,10 @@ def game_to_dict(game: Game) -> dict:
         elif isinstance(cmd, Trigger):
             return {
                 "type": "trigger",
-                "trigger_type": cmd.trigger_type,
+                "trigger_type": cmd.trigger_type.value,
                 "value": cmd.value,
             }
-        return {}
+        raise ValueError(f"Unknown command type: {type(cmd)}")
 
     def condition_to_dict(cond) -> dict:
         if isinstance(cond, FlagCondition):
@@ -92,10 +92,10 @@ def game_to_dict(game: Game) -> dict:
             return {
                 "type": "counter",
                 "counter": cond.counter_id,
-                "operator": cond.operator,
+                "operator": cond.operator.value,
                 "value": cond.value,
             }
-        return {}
+        raise ValueError(f"Unknown condition type: {type(cond)}")
 
     def choice_to_dict(choice: Choice) -> dict:
         return {

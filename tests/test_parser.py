@@ -375,7 +375,7 @@ class TestChoicesAndCommands:
         game = parse(source)
         cmd = game.cards[0].choices[0].commands[0]
         assert isinstance(cmd, Trigger)
-        assert cmd.trigger_type == "response"
+        assert cmd.trigger_type.value == "response"
         assert cmd.value == "Well done!"
 
     def test_trigger_sound(self):
@@ -383,7 +383,7 @@ class TestChoicesAndCommands:
         game = parse(source)
         cmd = game.cards[0].choices[0].commands[0]
         assert isinstance(cmd, Trigger)
-        assert cmd.trigger_type == "sound"
+        assert cmd.trigger_type.value == "sound"
         assert cmd.value == "coin.wav"
 
     def test_multiple_commands(self):
@@ -461,35 +461,35 @@ class TestConditions:
         cond = game.cards[0].require[0]
         assert isinstance(cond, CounterCondition)
         assert cond.counter_id == "treasury"
-        assert cond.operator == "<"
+        assert cond.operator.value == "<"
         assert cond.value == 30
 
     def test_counter_greater_than(self):
         source = "C (card:c)\n\trequire: counter:army > 70"
         game = parse(source)
         cond = game.cards[0].require[0]
-        assert cond.operator == ">"
+        assert cond.operator.value == ">"
         assert cond.value == 70
 
     def test_counter_equals(self):
         source = "C (card:c)\n\trequire: counter:x = 50"
         game = parse(source)
         cond = game.cards[0].require[0]
-        assert cond.operator == "="
+        assert cond.operator.value == "="
         assert cond.value == 50
 
     def test_counter_less_equal(self):
         source = "C (card:c)\n\trequire: counter:x <= 30"
         game = parse(source)
         cond = game.cards[0].require[0]
-        assert cond.operator == "<="
+        assert cond.operator.value == "<="
         assert cond.value == 30
 
     def test_counter_greater_equal(self):
         source = "C (card:c)\n\trequire: counter:x >= 70"
         game = parse(source)
         cond = game.cards[0].require[0]
-        assert cond.operator == ">="
+        assert cond.operator.value == ">="
         assert cond.value == 70
 
     def test_multiple_conditions_and(self):
@@ -504,7 +504,7 @@ class TestConditions:
         source = "C (card:c)\n\trequire: !flag:peace, counter:army < 20"
         game = parse(source)
         assert game.cards[0].require[0].negated is True
-        assert game.cards[0].require[1].operator == "<"
+        assert game.cards[0].require[1].operator.value == "<"
 
 
 # =========================================================================
@@ -546,7 +546,7 @@ class TestWeight:
         assert w.value == 2.0
         assert isinstance(w.condition, CounterCondition)
         assert w.condition.counter_id == "treasury"
-        assert w.condition.operator == "<"
+        assert w.condition.operator.value == "<"
         assert w.condition.value == 30
 
     def test_multiple_weights(self):

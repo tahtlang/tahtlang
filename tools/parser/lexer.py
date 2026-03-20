@@ -1,7 +1,7 @@
 """
-Line-based lexer for TahtaScript.
+Line-based lexer for TahtLang.
 
-TahtaScript is line-oriented, so we don't need traditional tokenization.
+TahtLang is line-oriented, so we don't need traditional tokenization.
 Instead, we classify each line by its type and extract relevant parts.
 """
 
@@ -10,22 +10,30 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Iterator, Optional
 
+from .ast import SourceLocation
+
 
 class LineType(Enum):
-    """Types of lines in TahtaScript."""
+    """Types of lines in TahtLang."""
 
     EMPTY = auto()
     COMMENT = auto()
-    IMPORT = auto()  # import "path/to/file.tahta"
-    ENTITY_HEADER = auto()  # Name (type, id, ...flags)
-    PROPERTY = auto()  # key: value
-    INDENTED = auto()  # starts with whitespace (for weight blocks)
-    PRIMARY_VALUE = auto()  # > value (card text)
-    CHOICE = auto()  # * label: commands
+    # import "path/to/file.tahta"
+    IMPORT = auto()
+    # Name (type, id, ...flags)
+    ENTITY_HEADER = auto()
+    # key: value
+    PROPERTY = auto()
+    # starts with whitespace (for weight blocks)
+    INDENTED = auto()
+    # > value (card text)
+    PRIMARY_VALUE = auto()
+    # * label: commands
+    CHOICE = auto()
 
 
 class EntityType(Enum):
-    """Entity types in TahtaScript."""
+    """Entity types in TahtLang."""
 
     SETTINGS = "settings"
     COUNTER = "counter"
@@ -40,7 +48,7 @@ ENTITY_TYPE_MAP: dict[str, EntityType] = {e.value: e for e in EntityType}
 
 
 class Modifier(Enum):
-    """Entity modifiers in TahtaScript."""
+    """Entity modifiers in TahtLang."""
 
     KILLER = "killer"
     KEEP = "keep"
@@ -78,7 +86,7 @@ class Line:
 
 class Lexer:
     """
-    Line-based lexer for TahtaScript.
+    Line-based lexer for TahtLang.
 
     Usage:
         lexer = Lexer(source, filename)
@@ -111,6 +119,16 @@ class Lexer:
         for i, raw in enumerate(self.lines, start=1):
             yield self._classify_line(raw, i)
 
+    def _require_indent(self, indent: int, line_number: int, sigil: str):
+        """Raise ParseError if line is not indented."""
+        if indent == 0:
+            from .errors import ParseError
+
+            raise ParseError(
+                f"{sigil} line must be indented",
+                SourceLocation(self.filename, line_number),
+            )
+
     def _check_indent_consistency(self, raw: str, line_number: int):
         """
         Check that indentation is consistent (all tabs or spaces, not mixed).
@@ -134,7 +152,7 @@ class Lexer:
         has_tab = "\t" in indent_chars
         has_space = " " in indent_chars
         if has_tab and has_space:
-            from .errors import ParseError, SourceLocation
+            from .errors import ParseError
 
             raise ParseError(
                 "Mixed indentation: cannot use both TAB and space "
@@ -147,7 +165,7 @@ class Lexer:
         if self.indent_char is None:
             self.indent_char = first_char
         elif self.indent_char != first_char:
-            from .errors import ParseError, SourceLocation
+            from .errors import ParseError
 
             expected = "TAB" if self.indent_char == "\t" else "space"
             found = "TAB" if first_char == "\t" else "space"
@@ -156,6 +174,58 @@ class Lexer:
                 f"but this line uses {found}",
                 SourceLocation(self.filename, line_number),
             )
+
+    def _try_parse_entity_header(
+        self, stripped: str, raw: str, line_number: int, indent: int
+    ) -> Optional[Line]:
+        """Try to parse an entity header at column 0."""
+        if indent != 0:
+            return None
+
+        match = self.ENTITY_HEADER_PATTERN.match(stripped)
+        if not match:
+            return None
+
+        name = match.group(1).strip()
+        parts = [p.strip() for p in match.group(2).split(",")]
+
+        if not parts or ":" not in parts[0]:
+            return None
+
+        type_id = parts[0].split(":", 1)
+        type_str = type_id[0].lower()
+        entity_id = type_id[1] if len(type_id) > 1 else None
+        raw_flags = parts[1:] if len(parts) > 1 else []
+
+        entity_type = ENTITY_TYPE_MAP.get(type_str)
+        if entity_type is None:
+            return None
+
+        # Normalize modifiers: lowercase + convert to enum
+        modifiers: set[Modifier] = set()
+        for f in raw_flags:
+            flag_str = f.strip().lower()
+            mod = MODIFIER_MAP.get(flag_str)
+            if mod is not None:
+                modifiers.add(mod)
+            else:
+                from .errors import ParseError
+
+                raise ParseError(
+                    f"Unknown modifier: '{f.strip()}'",
+                    SourceLocation(self.filename, line_number),
+                )
+
+        return Line(
+            LineType.ENTITY_HEADER,
+            raw,
+            line_number,
+            indent,
+            entity_name=name,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            entity_modifiers=modifiers,
+        )
 
     def _classify_line(self, raw: str, line_number: int) -> Line:
         """Classify a single line and extract its parts."""
@@ -193,29 +263,16 @@ class Lexer:
 
         # Primary value: > value (card text) - MUST be indented
         if stripped.startswith(">"):
-            if indent == 0:
-                from .errors import ParseError, SourceLocation
-
-                raise ParseError(
-                    "Content line must be indented ('>')",
-                    SourceLocation(self.filename, line_number),
-                )
+            self._require_indent(indent, line_number, "Content ('>')")
             text = stripped[1:].strip()
             return Line(
                 LineType.PRIMARY_VALUE, raw, line_number, indent, value=text
             )
 
         # Choice with empty label (blind choice): * : commands
-        # MUST be indented
         match = self.CHOICE_EMPTY_LABEL_PATTERN.match(stripped)
         if match:
-            if indent == 0:
-                from .errors import ParseError, SourceLocation
-
-                raise ParseError(
-                    "Choice line must be indented ('*')",
-                    SourceLocation(self.filename, line_number),
-                )
+            self._require_indent(indent, line_number, "Choice ('*')")
             return Line(
                 LineType.CHOICE,
                 raw,
@@ -225,16 +282,10 @@ class Lexer:
                 choice_commands=match.group(1).strip(),
             )
 
-        # Choice: * label: commands - MUST be indented
+        # Choice: * label: commands
         match = self.CHOICE_PATTERN.match(stripped)
         if match:
-            if indent == 0:
-                from .errors import ParseError, SourceLocation
-
-                raise ParseError(
-                    "Choice line must be indented ('*')",
-                    SourceLocation(self.filename, line_number),
-                )
+            self._require_indent(indent, line_number, "Choice ('*')")
             return Line(
                 LineType.CHOICE,
                 raw,
@@ -244,16 +295,10 @@ class Lexer:
                 choice_commands=match.group(2).strip(),
             )
 
-        # Choice without commands: * label - MUST be indented
+        # Choice without commands: * label
         match = self.CHOICE_NO_CMD_PATTERN.match(stripped)
         if match:
-            if indent == 0:
-                from .errors import ParseError, SourceLocation
-
-                raise ParseError(
-                    "Choice line must be indented ('*')",
-                    SourceLocation(self.filename, line_number),
-                )
+            self._require_indent(indent, line_number, "Choice ('*')")
             return Line(
                 LineType.CHOICE,
                 raw,
@@ -264,44 +309,17 @@ class Lexer:
             )
 
         # Entity header: Name (type:id, ...flags) - must be at column 0
-        # Format: Hazine (counter:hazine, killer)
-        if indent == 0:
-            match = self.ENTITY_HEADER_PATTERN.match(stripped)
-            if match:
-                name = match.group(1).strip()
-                parts = [p.strip() for p in match.group(2).split(",")]
-
-                if parts and ":" in parts[0]:
-                    type_id = parts[0].split(":", 1)
-                    type_str = type_id[0].lower()
-                    entity_id = type_id[1] if len(type_id) > 1 else None
-                    raw_flags = parts[1:] if len(parts) > 1 else []
-
-                    entity_type = ENTITY_TYPE_MAP.get(type_str)
-                    if entity_type is not None:
-                        # Normalize modifiers: lowercase + convert to enum
-                        modifiers: set[Modifier] = set()
-                        for f in raw_flags:
-                            mod = MODIFIER_MAP.get(f.strip().lower())
-                            if mod is not None:
-                                modifiers.add(mod)
-
-                        return Line(
-                            LineType.ENTITY_HEADER,
-                            raw,
-                            line_number,
-                            indent,
-                            entity_name=name,
-                            entity_type=entity_type,
-                            entity_id=entity_id,
-                            entity_modifiers=modifiers,
-                        )
+        entity_line = self._try_parse_entity_header(
+            stripped, raw, line_number, indent
+        )
+        if entity_line:
+            return entity_line
 
         # Property: key: value - MUST be indented
         match = self.PROPERTY_PATTERN.match(stripped)
         if match:
             if indent == 0:
-                from .errors import ParseError, SourceLocation
+                from .errors import ParseError
 
                 raise ParseError(
                     f"Property line must be indented ('{match.group(1)}')",

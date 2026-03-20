@@ -12,7 +12,7 @@ Design decisions:
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 # =============================================================================
 # Source Location (for error reporting)
@@ -40,6 +40,16 @@ class SourceLocation:
 # =============================================================================
 
 
+class Operator(Enum):
+    """Comparison operators for counter conditions."""
+
+    LTE = "<="
+    GTE = ">="
+    LT = "<"
+    GT = ">"
+    EQ = "="
+
+
 @dataclass(frozen=True)
 class FlagCondition:
     """Flag presence/absence condition: flag:winter or !flag:winter"""
@@ -54,7 +64,7 @@ class CounterCondition:
     """Counter comparison: counter:hazine < 30 or counter:ordu > 50"""
 
     counter_id: str
-    operator: str  # '<', '>', '=', '<=', '>='
+    operator: Operator
     value: int
     loc: Optional[SourceLocation] = None
 
@@ -153,6 +163,13 @@ class CardTimed:
     loc: Optional[SourceLocation] = None
 
 
+class TriggerType(Enum):
+    """Available trigger types."""
+
+    RESPONSE = "response"
+    SOUND = "sound"
+
+
 @dataclass(frozen=True)
 class Trigger:
     """Trigger an effect: trigger:response "text" or trigger:sound "coin.wav"
@@ -162,7 +179,7 @@ class Trigger:
     - sound: Plays a sound effect
     """
 
-    trigger_type: str  # "response", "sound"
+    trigger_type: TriggerType
     value: str  # Text or sound file name
     loc: Optional[SourceLocation] = None
 
@@ -298,7 +315,7 @@ LOCKTURN_ONCE = "once"  # Lock for this reign only (resets on king death)
 LOCKTURN_DISPOSE = "dispose"  # Remove from game permanently after showing
 
 # Type alias for lockturn: int (turns) | "once" | "dispose" | None
-Lockturn = Union[int, str, None]
+Lockturn = Union[int, Literal["once", "dispose"], None]
 
 
 @dataclass(frozen=True)

@@ -40,7 +40,7 @@ from .ast import (
     SourceLocation,
     Variant,
 )
-from .errors import ValidationError
+from .errors import ParseError, ValidationError
 from .parser import Parser
 
 
@@ -84,57 +84,24 @@ class Validator:
         self.game = game
 
         # Check for camelCase in IDs (should use snake_case)
-        for counter in game.counters:
-            self._check_snake_case(counter.id, "counter", counter.loc)
-        for flag in game.flags:
-            self._check_snake_case(flag.id, "flag", flag.loc)
-        for variant in game.variants:
-            self._check_snake_case(variant.id, "variant", variant.loc)
-        for character in game.characters:
-            self._check_snake_case(character.id, "character", character.loc)
-        for card in game.cards:
-            self._check_snake_case(card.id, "card", card.loc)
+        for collection, type_name in [
+            (game.counters, "counter"),
+            (game.flags, "flag"),
+            (game.variants, "variant"),
+            (game.characters, "character"),
+            (game.cards, "card"),
+        ]:
+            for entity in collection:
+                self._check_snake_case(entity.id, type_name, entity.loc)
 
         # Collect all defined IDs and check for duplicates
-        counter_ids: set[str] = set()
-        for counter in game.counters:
-            if counter.id in counter_ids:
-                self.result.add_error(
-                    f"Duplicate counter ID: '{counter.id}'", counter.loc
-                )
-            counter_ids.add(counter.id)
-
-        flag_ids: set[str] = set()
-        for flag in game.flags:
-            if flag.id in flag_ids:
-                self.result.add_error(
-                    f"Duplicate flag ID: '{flag.id}'", flag.loc
-                )
-            flag_ids.add(flag.id)
-
-        variant_ids: set[str] = set()
-        for variant in game.variants:
-            if variant.id in variant_ids:
-                self.result.add_error(
-                    f"Duplicate variant ID: '{variant.id}'", variant.loc
-                )
-            variant_ids.add(variant.id)
-
-        character_ids: set[str] = set()
-        for character in game.characters:
-            if character.id in character_ids:
-                self.result.add_error(
-                    f"Duplicate character ID: '{character.id}'", character.loc
-                )
-            character_ids.add(character.id)
-
-        card_ids: set[str] = set()
-        for card in game.cards:
-            if card.id in card_ids:
-                self.result.add_error(
-                    f"Duplicate card ID: '{card.id}'", card.loc
-                )
-            card_ids.add(card.id)
+        counter_ids = self._check_duplicate_ids(game.counters, "counter")
+        flag_ids = self._check_duplicate_ids(game.flags, "flag")
+        variant_ids = self._check_duplicate_ids(game.variants, "variant")
+        character_ids = self._check_duplicate_ids(
+            game.characters, "character"
+        )
+        card_ids = self._check_duplicate_ids(game.cards, "card")
 
         # Validate each card
         for card in game.cards:
@@ -172,6 +139,20 @@ class Validator:
 
         return self.result
 
+    def _check_duplicate_ids(
+        self, entities, entity_type_name: str
+    ) -> set[str]:
+        """Check for duplicate IDs and return a set of all IDs."""
+        ids: set[str] = set()
+        for entity in entities:
+            if entity.id in ids:
+                self.result.add_error(
+                    f"Duplicate {entity_type_name} ID: '{entity.id}'",
+                    entity.loc,
+                )
+            ids.add(entity.id)
+        return ids
+
     def _validate_virtual_counter(
         self, counter: Counter, counter_ids: set[str], character_ids: set[str]
     ):
@@ -192,7 +173,7 @@ class Validator:
         # Aggregate counter: source should be counter references
         if counter.aggregate is not None:
             for ref in counter.source:
-                if ref.lower().startswith("counter:"):
+                if ref.startswith("counter:"):
                     ref_id = ref[8:]  # Strip 'counter:' prefix
                     if ref_id not in counter_ids:
                         self.result.add_error(
@@ -210,7 +191,7 @@ class Validator:
         # Tracking counter: source should be character references
         if counter.track is not None:
             for ref in counter.source:
-                if ref.lower().startswith("character:"):
+                if ref.startswith("character:"):
                     ref_id = ref[10:]  # Strip 'character:' prefix
                     if ref_id not in character_ids:
                         self.result.add_error(
@@ -244,11 +225,6 @@ class Validator:
                     f"'{card.id}' -> '_{card.id}'",
                     card.loc,
                 )
-            # Ring cards CAN have weight, lockturn, and require
-            # This allows Reigns-style conditional card variants:
-            # - Same ID, different conditions → runtime picks matching one
-            # - Weight determines selection probability among matching cards
-            # - Lockturn provides cooldown after showing
         else:
             # Non-ring cards with '_' prefix should have ring modifier
             if card.id.startswith("_"):
@@ -440,11 +416,6 @@ def resolve_imports(filepath: str) -> tuple[Game, ValidationResult]:
 
     Returns a merged Game with all entities from imported files,
     and a ValidationResult with any import-related errors.
-
-    Usage:
-        game, result = resolve_imports("main.tahta")
-        if result.is_valid:
-            # game contains all entities from main + imported files
     """
     result = ValidationResult()
     parser = Parser()
@@ -509,7 +480,7 @@ def resolve_imports(filepath: str) -> tuple[Game, ValidationResult]:
             for imp in game.imports:
                 resolve_file(imp.path, file_dir)
 
-        except Exception as e:
+        except (ParseError, OSError) as e:
             result.add_error(f"Error parsing {file_path}: {str(e)}")
         finally:
             # Remove from chain when done
