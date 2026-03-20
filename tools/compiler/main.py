@@ -11,17 +11,13 @@ Usage:
 import argparse
 import json
 import sys
-from pathlib import Path
 
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from parser import Parser, ParseError
-from parser.validator import validate_game as validate_game_semantics, resolve_imports, validate_with_imports
-from parser.ast import (
+from tools.parser import Parser, ParseError
+from tools.parser.validator import validate_game as validate_game_semantics, resolve_imports, validate_with_imports
+from tools.parser.ast import (
     Game, Card, Counter, Flag, Variant, Character, Settings,
     Choice, Bearer, Weight,
-    CounterMod, FlagSet, FlagClear, CardQueue, CardBranch, CardTimed,
+    CounterMod, FlagSet, FlagClear, CardQueue, CardBranch, CardTimed, Trigger,
     FlagCondition, CounterCondition,
     FixedValue, RangeValue,
     AggregateType, TrackType
@@ -55,6 +51,8 @@ def game_to_dict(game: Game) -> dict:
             return {"type": "card_branch", "cards": list(cmd.card_ids)}
         elif isinstance(cmd, CardTimed):
             return {"type": "card_timed", "card": cmd.card_id, "delay": cmd.delay}
+        elif isinstance(cmd, Trigger):
+            return {"type": "trigger", "trigger_type": cmd.trigger_type, "value": cmd.value}
         return {}
 
     def condition_to_dict(cond) -> dict:
@@ -150,6 +148,7 @@ def game_to_dict(game: Game) -> dict:
                 "require": [condition_to_dict(r) for r in c.require],
                 "weights": [weight_to_dict(w) for w in c.weights],
                 "lockturn": c.lockturn,
+                "ring": c.ring,
                 "choices": [choice_to_dict(ch) for ch in c.choices],
             }
             for c in game.cards
@@ -170,7 +169,7 @@ def main():
         help="Sadece dogrula, cikti uretme"
     )
     arg_parser.add_argument(
-        "--pretty", action="store_true", default=True,
+        "--pretty", action="store_true",
         help="Guzel formatlama JSON (varsayilan)"
     )
     arg_parser.add_argument(

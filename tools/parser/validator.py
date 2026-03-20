@@ -24,9 +24,9 @@ from .ast import (
     # Conditions
     FlagCondition, CounterCondition, Condition,
     # Source location
-    SourceLocation as ASTLocation
+    SourceLocation,
 )
-from .errors import ValidationError, SourceLocation
+from .errors import ValidationError
 from .parser import Parser
 
 
@@ -40,11 +40,8 @@ class ValidationResult:
     def is_valid(self) -> bool:
         return len(self.errors) == 0
 
-    def add_error(self, message: str, loc: Optional[ASTLocation] = None):
-        error_loc = None
-        if loc:
-            error_loc = SourceLocation(loc.file, loc.line)
-        self.errors.append(ValidationError(message, error_loc))
+    def add_error(self, message: str, loc: Optional[SourceLocation] = None):
+        self.errors.append(ValidationError(message, loc))
 
     def add_warning(self, message: str):
         self.warnings.append(message)
@@ -84,12 +81,42 @@ class Validator:
             self._check_snake_case(card.id, "card", card.loc)
 
         # Collect all defined IDs and check for duplicates
-        counter_ids = {c.id for c in game.counters}
-        flag_ids = {f.id for f in game.flags}
-        variant_ids = {v.id for v in game.variants}
-        character_ids = {c.id for c in game.characters}
+        counter_ids: set[str] = set()
+        for counter in game.counters:
+            if counter.id in counter_ids:
+                self.result.add_error(
+                    f"Duplicate counter ID'si: '{counter.id}'",
+                    counter.loc
+                )
+            counter_ids.add(counter.id)
 
-        # Check for duplicate card IDs
+        flag_ids: set[str] = set()
+        for flag in game.flags:
+            if flag.id in flag_ids:
+                self.result.add_error(
+                    f"Duplicate flag ID'si: '{flag.id}'",
+                    flag.loc
+                )
+            flag_ids.add(flag.id)
+
+        variant_ids: set[str] = set()
+        for variant in game.variants:
+            if variant.id in variant_ids:
+                self.result.add_error(
+                    f"Duplicate variant ID'si: '{variant.id}'",
+                    variant.loc
+                )
+            variant_ids.add(variant.id)
+
+        character_ids: set[str] = set()
+        for character in game.characters:
+            if character.id in character_ids:
+                self.result.add_error(
+                    f"Duplicate character ID'si: '{character.id}'",
+                    character.loc
+                )
+            character_ids.add(character.id)
+
         card_ids: set[str] = set()
         for card in game.cards:
             if card.id in card_ids:
@@ -358,7 +385,7 @@ class Validator:
         text: str,
         card_id: str,
         character_ids: set[str],
-        loc: Optional[ASTLocation] = None
+        loc: Optional[SourceLocation] = None
     ):
         """Validate {character:X} references in card text."""
         # Find all {character:X} patterns
@@ -372,7 +399,7 @@ class Validator:
                 )
 
 
-    def _check_snake_case(self, id_str: str, entity_type: str, loc: Optional[ASTLocation]):
+    def _check_snake_case(self, id_str: str, entity_type: str, loc: Optional[SourceLocation]):
         """Check if ID uses snake_case. Warn if camelCase detected."""
         # Skip ring card prefix
         check_str = id_str[1:] if id_str.startswith('_') else id_str

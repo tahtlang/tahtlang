@@ -2,21 +2,9 @@
 Error types for the TahtaScript parser.
 """
 
-from dataclasses import dataclass
 from typing import Optional
 
-
-@dataclass
-class SourceLocation:
-    """Location in source file for error reporting."""
-    file: str
-    line: int
-    column: int = 0
-
-    def __str__(self) -> str:
-        if self.column:
-            return f"{self.file}:{self.line}:{self.column}"
-        return f"{self.file}:{self.line}"
+from .ast import SourceLocation
 
 
 class TahtaError(Exception):

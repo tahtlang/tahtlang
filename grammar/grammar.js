@@ -129,7 +129,7 @@ module.exports = grammar({
     condition_list: $ => sep1($.condition, ','),
     condition: $ => choice($.flag_condition, $.counter_condition),
     flag_condition: $ => seq(optional('!'), $.flag_ref),
-    counter_condition: $ => seq($.counter_ref, choice('<', '>', '='), $.integer),
+    counter_condition: $ => seq($.counter_ref, choice('<=', '>=', '<', '>', '='), $.integer),
 
     // Commands
     command_list: $ => sep1($.command, ','),

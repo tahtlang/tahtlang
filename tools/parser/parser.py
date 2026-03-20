@@ -25,7 +25,7 @@ from .ast import (
     # Virtual counter enums
     AggregateType, TrackType
 )
-from .errors import ParseError, SourceLocation as ErrorLocation
+from .errors import ParseError
 
 
 class Parser:
@@ -151,7 +151,7 @@ class Parser:
             column=line.indent
         )
 
-    def _parse_settings(self, name: str, id: str, header: Line):
+    def _parse_settings(self, name: str, entity_id: str, header: Line):
         """Parse settings entity."""
         props = self._collect_properties()
 
@@ -168,7 +168,7 @@ class Parser:
             game_over_on_max = props["game_over_on_max"].lower() == "true"
 
         self._settings = Settings(
-            id=id or "main",
+            id=entity_id or "main",
             name=name or "",
             description=self._strip_quotes(props.get("description", "")),
             starting_flags=starting_flags,
@@ -177,7 +177,7 @@ class Parser:
             loc=self._make_loc(header)
         )
 
-    def _parse_counter(self, name: str, id: str, flags: list[str], header: Line):
+    def _parse_counter(self, name: str, entity_id: str, flags: list[str], header: Line):
         """Parse a counter entity. Primary field: start value
 
         Regular counter:
@@ -236,7 +236,7 @@ class Parser:
                 track = TrackType.NO
 
         counter = Counter(
-            id=id,
+            id=entity_id,
             name=name,
             icon=props.get("icon", ""),
             start=start,
@@ -250,7 +250,7 @@ class Parser:
         )
         self._counters.append(counter)
 
-    def _parse_flag(self, name: str, id: str, flags: list[str], header: Line):
+    def _parse_flag(self, name: str, entity_id: str, flags: list[str], header: Line):
         """Parse a flag entity."""
         props = self._collect_properties()
 
@@ -264,7 +264,7 @@ class Parser:
             bind = self._strip_type_prefix(props["bind"], "character")
 
         flag = Flag(
-            id=id,
+            id=entity_id,
             name=name,
             bind=bind,
             keep=keep,
@@ -272,31 +272,31 @@ class Parser:
         )
         self._flags.append(flag)
 
-    def _parse_variant(self, name: str, id: str, header: Line):
+    def _parse_variant(self, name: str, entity_id: str, header: Line):
         """Parse a variant entity (emotion, state, pose)."""
         props = self._collect_properties()
 
         variant = Variant(
-            id=id,
+            id=entity_id,
             name=name,
             prompt=self._strip_quotes(props.get("prompt", "")),
             loc=self._make_loc(header)
         )
         self._variants.append(variant)
 
-    def _parse_character(self, name: str, id: str, header: Line):
+    def _parse_character(self, name: str, entity_id: str, header: Line):
         """Parse a character entity."""
         props = self._collect_properties()
 
         character = Character(
-            id=id,
+            id=entity_id,
             name=name,
             prompt=self._strip_quotes(props.get("prompt", "")),
             loc=self._make_loc(header)
         )
         self._characters.append(character)
 
-    def _parse_card(self, name: str, id: str, flags: list[str], header: Line):
+    def _parse_card(self, name: str, entity_id: str, flags: list[str], header: Line):
         """Parse a card entity. Primary field: text"""
         bearer: Optional[Bearer] = None
         text: str = ""
@@ -357,7 +357,10 @@ class Parser:
                         try:
                             lockturn = int(value)
                         except ValueError:
-                            pass
+                            raise self._error(
+                                f"Gecersiz lockturn degeri: '{value}' (tam sayi, 'once' veya 'dispose' olmali)",
+                                line
+                            )
 
                 self._advance()
                 continue
@@ -372,7 +375,7 @@ class Parser:
             self._advance()
 
         card = Card(
-            id=id,
+            id=entity_id,
             name=name,
             bearer=bearer,
             text=text,
@@ -465,6 +468,8 @@ class Parser:
             cmd = self._parse_single_command(part, line)
             if cmd:
                 commands.append(cmd)
+            else:
+                raise self._error(f"Bilinmeyen komut: '{part}'", line)
 
         return commands
 
@@ -671,13 +676,13 @@ class Parser:
                 condition = self._parse_single_condition(condition_str, line)
                 return Weight(value=weight_value, condition=condition, loc=loc)
             except ValueError:
-                return None
+                raise self._error(f"Gecersiz weight degeri: '{weight_str}'", line)
         else:
             # No condition, just a number
             try:
                 return Weight(value=float(value), condition=None, loc=loc)
             except ValueError:
-                return None
+                raise self._error(f"Gecersiz weight degeri: '{value}'", line)
 
     def _parse_flag_list(self, value: str) -> list[str]:
         """
@@ -881,6 +886,6 @@ class Parser:
 
         loc = None
         if line:
-            loc = ErrorLocation(self.current_file, line.line_number)
+            loc = SourceLocation(file=self.current_file, line=line.line_number)
 
         return ParseError(message, loc)

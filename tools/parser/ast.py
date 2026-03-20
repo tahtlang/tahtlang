@@ -24,9 +24,14 @@ class SourceLocation:
     """Source code location for error reporting."""
     file: str
     line: int
-    column: int
+    column: int = 0
     end_line: Optional[int] = None
     end_column: Optional[int] = None
+
+    def __str__(self) -> str:
+        if self.column:
+            return f"{self.file}:{self.line}:{self.column}"
+        return f"{self.file}:{self.line}"
 
 
 # =============================================================================
@@ -45,7 +50,7 @@ class FlagCondition:
 class CounterCondition:
     """Counter comparison: counter:hazine < 30 or counter:ordu > 50"""
     counter_id: str
-    operator: str  # '<' or '>'
+    operator: str  # '<', '>', '=', '<=', '>='
     value: int
     loc: Optional[SourceLocation] = None
 
@@ -331,22 +336,22 @@ class Game:
     characters: tuple[Character, ...] = ()
     cards: tuple[Card, ...] = ()
 
-    def get_counter(self, id: str) -> Optional[Counter]:
+    def get_counter(self, entity_id: str) -> Optional[Counter]:
         """Find counter by ID."""
-        return next((c for c in self.counters if c.id == id), None)
+        return next((c for c in self.counters if c.id == entity_id), None)
 
-    def get_flag(self, id: str) -> Optional[Flag]:
+    def get_flag(self, entity_id: str) -> Optional[Flag]:
         """Find flag by ID."""
-        return next((f for f in self.flags if f.id == id), None)
+        return next((f for f in self.flags if f.id == entity_id), None)
 
-    def get_variant(self, id: str) -> Optional[Variant]:
+    def get_variant(self, entity_id: str) -> Optional[Variant]:
         """Find variant by ID."""
-        return next((v for v in self.variants if v.id == id), None)
+        return next((v for v in self.variants if v.id == entity_id), None)
 
-    def get_character(self, id: str) -> Optional[Character]:
+    def get_character(self, entity_id: str) -> Optional[Character]:
         """Find character by ID."""
-        return next((c for c in self.characters if c.id == id), None)
+        return next((c for c in self.characters if c.id == entity_id), None)
 
-    def get_card(self, id: str) -> Optional[Card]:
+    def get_card(self, entity_id: str) -> Optional[Card]:
         """Find card by ID."""
-        return next((c for c in self.cards if c.id == id), None)
+        return next((c for c in self.cards if c.id == entity_id), None)

@@ -8,21 +8,15 @@ Features:
 - Go to Definition (jump to entity declaration)
 """
 
-import sys
-from pathlib import Path
 from typing import Optional
 
 from lsprotocol import types as lsp
 from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
 
-# Add parent to path for imports
-tools_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(tools_dir))
-
-from parser import Parser, ParseError, validate_game
-from parser.lexer import Lexer, LineType
-from parser.ast import Game
+from tools.parser import Parser, ParseError, validate_game
+from tools.parser.lexer import Lexer, LineType
+from tools.parser.ast import Game
 
 
 class TahtaLanguageServer(LanguageServer):
@@ -429,6 +423,14 @@ def did_save(ls: TahtaLanguageServer, params: lsp.DidSaveTextDocumentParams):
     ls.text_document_publish_diagnostics(
         lsp.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
     )
+
+
+@server.feature(lsp.TEXT_DOCUMENT_DID_CLOSE)
+def did_close(ls: TahtaLanguageServer, params: lsp.DidCloseTextDocumentParams):
+    """Handle document close - clean up cached data."""
+    uri = params.text_document.uri
+    ls.games.pop(uri, None)
+    ls.entity_locations.pop(uri, None)
 
 
 @server.feature(
