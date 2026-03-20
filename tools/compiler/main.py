@@ -15,6 +15,7 @@ import sys
 from tools.parser import ParseError
 from tools.parser.ast import (
     Bearer,
+    Card,
     CardBranch,
     CardQueue,
     CardTimed,
@@ -38,83 +39,109 @@ from tools.parser.validator import (
 )
 
 
+def value_to_dict(val):
+    """Convert ValueOrRange to a JSON-serializable dict."""
+    if isinstance(val, FixedValue):
+        return {"type": "fixed", "value": val.value}
+    elif isinstance(val, RangeValue):
+        return {
+            "type": "range",
+            "min": val.min_value,
+            "max": val.max_value,
+        }
+    raise ValueError(f"Unknown value type: {type(val)}")
+
+
+def command_to_dict(cmd) -> dict:
+    """Convert Command to a JSON-serializable dict."""
+    if isinstance(cmd, CounterMod):
+        return {
+            "type": "counter_mod",
+            "counter": cmd.counter_id,
+            "value": value_to_dict(cmd.value),
+        }
+    if isinstance(cmd, FlagSet):
+        return {"type": "flag_set", "flag": cmd.flag_id}
+    if isinstance(cmd, FlagClear):
+        return {"type": "flag_clear", "flag": cmd.flag_id}
+    if isinstance(cmd, CardQueue):
+        return {"type": "card_queue", "card": cmd.card_id}
+    if isinstance(cmd, CardBranch):
+        return {"type": "card_branch", "cards": list(cmd.card_ids)}
+    if isinstance(cmd, CardTimed):
+        return {
+            "type": "card_timed",
+            "card": cmd.card_id,
+            "delay": cmd.delay,
+        }
+    if isinstance(cmd, Trigger):
+        return {
+            "type": "trigger",
+            "trigger_type": cmd.trigger_type.value,
+            "value": cmd.value,
+        }
+    raise ValueError(f"Unknown command type: {type(cmd)}")
+
+
+def condition_to_dict(cond) -> dict:
+    """Convert Condition to a JSON-serializable dict."""
+    if isinstance(cond, FlagCondition):
+        return {
+            "type": "flag",
+            "flag": cond.flag_id,
+            "negated": cond.negated,
+        }
+    if isinstance(cond, CounterCondition):
+        return {
+            "type": "counter",
+            "counter": cond.counter_id,
+            "operator": cond.operator.value,
+            "value": cond.value,
+        }
+    raise ValueError(f"Unknown condition type: {type(cond)}")
+
+
+def choice_to_dict(choice: Choice) -> dict:
+    """Convert Choice to a JSON-serializable dict."""
+    return {
+        "label": choice.label,
+        "commands": [command_to_dict(c) for c in choice.commands],
+    }
+
+
+def weight_to_dict(w: Weight) -> dict:
+    """Convert Weight to a JSON-serializable dict."""
+    d = {"value": w.value}
+    if w.condition:
+        d["condition"] = condition_to_dict(w.condition)
+    return d
+
+
+def bearer_to_dict(b: Bearer) -> dict:
+    """Convert Bearer to a JSON-serializable dict."""
+    d = {"character": b.character_id}
+    if b.variant_id:
+        d["variant"] = b.variant_id
+    return d
+
+
+def card_to_dict(c: Card) -> dict:
+    """Convert Card to a JSON-serializable dict."""
+    return {
+        "id": c.id,
+        "name": c.name,
+        "bearer": bearer_to_dict(c.bearer) if c.bearer else None,
+        "text": c.text,
+        "require": [condition_to_dict(r) for r in c.require],
+        "weights": [weight_to_dict(w) for w in c.weights],
+        "lockturn": c.lockturn,
+        "ring": c.ring,
+        "choices": [choice_to_dict(ch) for ch in c.choices],
+    }
+
+
 def game_to_dict(game: Game) -> dict:
     """Convert Game AST to a JSON-serializable dict."""
-
-    def value_to_dict(val):
-        if isinstance(val, FixedValue):
-            return {"type": "fixed", "value": val.value}
-        elif isinstance(val, RangeValue):
-            return {
-                "type": "range",
-                "min": val.min_value,
-                "max": val.max_value,
-            }
-        raise ValueError(f"Unknown value type: {type(val)}")
-
-    def command_to_dict(cmd) -> dict:
-        if isinstance(cmd, CounterMod):
-            return {
-                "type": "counter_mod",
-                "counter": cmd.counter_id,
-                "value": value_to_dict(cmd.value),
-            }
-        elif isinstance(cmd, FlagSet):
-            return {"type": "flag_set", "flag": cmd.flag_id}
-        elif isinstance(cmd, FlagClear):
-            return {"type": "flag_clear", "flag": cmd.flag_id}
-        elif isinstance(cmd, CardQueue):
-            return {"type": "card_queue", "card": cmd.card_id}
-        elif isinstance(cmd, CardBranch):
-            return {"type": "card_branch", "cards": list(cmd.card_ids)}
-        elif isinstance(cmd, CardTimed):
-            return {
-                "type": "card_timed",
-                "card": cmd.card_id,
-                "delay": cmd.delay,
-            }
-        elif isinstance(cmd, Trigger):
-            return {
-                "type": "trigger",
-                "trigger_type": cmd.trigger_type.value,
-                "value": cmd.value,
-            }
-        raise ValueError(f"Unknown command type: {type(cmd)}")
-
-    def condition_to_dict(cond) -> dict:
-        if isinstance(cond, FlagCondition):
-            return {
-                "type": "flag",
-                "flag": cond.flag_id,
-                "negated": cond.negated,
-            }
-        elif isinstance(cond, CounterCondition):
-            return {
-                "type": "counter",
-                "counter": cond.counter_id,
-                "operator": cond.operator.value,
-                "value": cond.value,
-            }
-        raise ValueError(f"Unknown condition type: {type(cond)}")
-
-    def choice_to_dict(choice: Choice) -> dict:
-        return {
-            "label": choice.label,
-            "commands": [command_to_dict(c) for c in choice.commands],
-        }
-
-    def weight_to_dict(w: Weight) -> dict:
-        d = {"value": w.value}
-        if w.condition:
-            d["condition"] = condition_to_dict(w.condition)
-        return d
-
-    def bearer_to_dict(b: Bearer) -> dict:
-        d = {"character": b.character_id}
-        if b.variant_id:
-            d["variant"] = b.variant_id
-        return d
-
     # Build settings
     settings_dict = {}
     if game.settings:
@@ -126,7 +153,7 @@ def game_to_dict(game: Game) -> dict:
             "game_over_on_max": game.settings.game_over_on_max,
         }
 
-    result = {
+    return {
         "settings": settings_dict,
         "counters": {
             c.id: {
@@ -169,23 +196,8 @@ def game_to_dict(game: Game) -> dict:
             }
             for c in game.characters
         },
-        "cards": {
-            c.id: {
-                "id": c.id,
-                "name": c.name,
-                "bearer": bearer_to_dict(c.bearer) if c.bearer else None,
-                "text": c.text,
-                "require": [condition_to_dict(r) for r in c.require],
-                "weights": [weight_to_dict(w) for w in c.weights],
-                "lockturn": c.lockturn,
-                "ring": c.ring,
-                "choices": [choice_to_dict(ch) for ch in c.choices],
-            }
-            for c in game.cards
-        },
+        "cards": {c.id: card_to_dict(c) for c in game.cards},
     }
-
-    return result
 
 
 def main():

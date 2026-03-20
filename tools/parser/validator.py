@@ -83,7 +83,37 @@ class Validator:
         self.result = ValidationResult()
         self.game = game
 
-        # Check for camelCase in IDs (should use snake_case)
+        self._check_all_snake_cases(game)
+
+        # Collect all defined IDs and check for duplicates
+        ids = self._collect_and_check_ids(game)
+
+        # Validate each card
+        for card in game.cards:
+            self._validate_card(card, ids)
+
+        # Validate starting_flags in settings
+        if game.settings:
+            self._validate_starting_flags(game.settings, ids["flags"])
+
+        # Validate flag bindings
+        for flag in game.flags:
+            if flag.bind and flag.bind not in ids["characters"]:
+                self.result.add_error(
+                    f"Undefined character: '{flag.bind}' "
+                    f"(flag: {flag.id}, bind)",
+                    flag.loc,
+                )
+
+        # Validate virtual counters
+        for counter in game.counters:
+            self._validate_virtual_counter(
+                counter, ids["counters"], ids["characters"]
+            )
+
+        return self.result
+
+    def _check_all_snake_cases(self, game):
         for collection, type_name in [
             (game.counters, "counter"),
             (game.flags, "flag"),
@@ -94,50 +124,24 @@ class Validator:
             for entity in collection:
                 self._check_snake_case(entity.id, type_name, entity.loc)
 
-        # Collect all defined IDs and check for duplicates
-        counter_ids = self._check_duplicate_ids(game.counters, "counter")
-        flag_ids = self._check_duplicate_ids(game.flags, "flag")
-        variant_ids = self._check_duplicate_ids(game.variants, "variant")
-        character_ids = self._check_duplicate_ids(
-            game.characters, "character"
-        )
-        card_ids = self._check_duplicate_ids(game.cards, "card")
+    def _collect_and_check_ids(self, game):
+        return {
+            "counters": self._check_duplicate_ids(game.counters, "counter"),
+            "flags": self._check_duplicate_ids(game.flags, "flag"),
+            "variants": self._check_duplicate_ids(game.variants, "variant"),
+            "characters": self._check_duplicate_ids(
+                game.characters, "character"
+            ),
+            "cards": self._check_duplicate_ids(game.cards, "card"),
+        }
 
-        # Validate each card
-        for card in game.cards:
-            self._validate_card(
-                card,
-                counter_ids=counter_ids,
-                flag_ids=flag_ids,
-                variant_ids=variant_ids,
-                character_ids=character_ids,
-                card_ids=card_ids,
-            )
-
-        # Validate starting_flags in settings
-        if game.settings:
-            for flag in game.settings.starting_flags:
-                if flag not in flag_ids:
-                    self.result.add_error(
-                        f"Undefined flag: '{flag}' (in starting_flags)",
-                        game.settings.loc,
-                    )
-
-        # Validate flag bindings
-        for flag in game.flags:
-            if flag.bind:
-                if flag.bind not in character_ids:
-                    self.result.add_error(
-                        f"Undefined character: '{flag.bind}' "
-                        f"(flag: {flag.id}, bind)",
-                        flag.loc,
-                    )
-
-        # Validate virtual counters
-        for counter in game.counters:
-            self._validate_virtual_counter(counter, counter_ids, character_ids)
-
-        return self.result
+    def _validate_starting_flags(self, settings, flag_ids):
+        for flag in settings.starting_flags:
+            if flag not in flag_ids:
+                self.result.add_error(
+                    f"Undefined flag: '{flag}' (in starting_flags)",
+                    settings.loc,
+                )
 
     def _check_duplicate_ids(
         self, entities, entity_type_name: str
@@ -158,10 +162,8 @@ class Validator:
     ):
         """Validate virtual counter source references."""
         if not counter.source:
-            # No source = regular counter, skip
             return
 
-        # If source is set, need either aggregate or track
         if counter.aggregate is None and counter.track is None:
             self.result.add_error(
                 f"Virtual counter '{counter.id}' has source "
@@ -170,178 +172,159 @@ class Validator:
             )
             return
 
-        # Aggregate counter: source should be counter references
         if counter.aggregate is not None:
-            for ref in counter.source:
-                if ref.startswith("counter:"):
-                    ref_id = ref[8:]  # Strip 'counter:' prefix
-                    if ref_id not in counter_ids:
-                        self.result.add_error(
-                            f"Undefined counter: '{ref_id}' "
-                            f"(counter: {counter.id}, source)",
-                            counter.loc,
-                        )
-                else:
-                    self.result.add_error(
-                        f"Aggregate counter source must be counter refs, "
-                        f"got: '{ref}' (counter: {counter.id})",
-                        counter.loc,
-                    )
+            self._validate_aggregate_counter(counter, counter_ids)
 
-        # Tracking counter: source should be character references
         if counter.track is not None:
-            for ref in counter.source:
-                if ref.startswith("character:"):
-                    ref_id = ref[10:]  # Strip 'character:' prefix
-                    if ref_id not in character_ids:
-                        self.result.add_error(
-                            f"Undefined character: '{ref_id}' "
-                            f"(counter: {counter.id}, source)",
-                            counter.loc,
-                        )
-                else:
+            self._validate_tracking_counter(counter, character_ids)
+
+    def _validate_aggregate_counter(self, counter, counter_ids):
+        for ref in counter.source:
+            if ref.startswith("counter:"):
+                ref_id = ref[8:]
+                if ref_id not in counter_ids:
                     self.result.add_error(
-                        f"Tracking counter source must be character refs, "
-                        f"got: '{ref}' (counter: {counter.id})",
+                        f"Undefined counter: '{ref_id}' "
+                        f"(counter: {counter.id}, source)",
                         counter.loc,
                     )
+            else:
+                self.result.add_error(
+                    "Aggregate counter source must be counter refs, "
+                    f"got: '{ref}' (counter: {counter.id})",
+                    counter.loc,
+                )
 
-    def _validate_card(
-        self,
-        card: Card,
-        counter_ids: set[str],
-        flag_ids: set[str],
-        variant_ids: set[str],
-        character_ids: set[str],
-        card_ids: set[str],
-    ):
+    def _validate_tracking_counter(self, counter, character_ids):
+        for ref in counter.source:
+            if ref.startswith("character:"):
+                ref_id = ref[10:]
+                if ref_id not in character_ids:
+                    self.result.add_error(
+                        f"Undefined character: '{ref_id}' "
+                        f"(counter: {counter.id}, source)",
+                        counter.loc,
+                    )
+            else:
+                self.result.add_error(
+                    "Tracking counter source must be character refs, "
+                    f"got: '{ref}' (counter: {counter.id})",
+                    counter.loc,
+                )
+
+    def _validate_card(self, card: Card, ids: dict):
         """Validate a single card."""
-        # Validate ring card rules
-        if card.ring:
-            # Ring cards must have ID starting with '_'
-            if not card.id.startswith("_"):
-                self.result.add_error(
-                    f"Ring card ID must start with '_': "
-                    f"'{card.id}' -> '_{card.id}'",
-                    card.loc,
-                )
-        else:
-            # Non-ring cards with '_' prefix should have ring modifier
-            if card.id.startswith("_"):
-                self.result.add_error(
-                    f"Card ID starting with '_' requires "
-                    f"ring modifier: '{card.id}'",
-                    card.loc,
-                )
+        self._validate_card_id_and_ring(card)
 
-        # Validate bearer reference
         if card.bearer:
-            if card.bearer.character_id not in character_ids:
-                self.result.add_error(
-                    f"Undefined bearer: '{card.bearer.character_id}' "
-                    f"(card: {card.id})",
-                    card.bearer.loc or card.loc,
-                )
-
-            # Validate variant reference
-            if (
-                card.bearer.variant_id
-                and card.bearer.variant_id not in variant_ids
-            ):
-                self.result.add_error(
-                    f"Undefined variant: '{card.bearer.variant_id}' "
-                    f"(card: {card.id})",
-                    card.bearer.loc or card.loc,
-                )
+            self._validate_bearer(card, ids["characters"], ids["variants"])
 
         # Validate conditions in card.require
         for condition in card.require:
-            self._validate_condition(condition, counter_ids, flag_ids, card.id)
+            self._validate_condition(
+                condition, ids["counters"], ids["flags"], card.id
+            )
 
         # Validate weight conditions
         for weight in card.weights:
             if weight.condition:
                 self._validate_condition(
-                    weight.condition, counter_ids, flag_ids, card.id
+                    weight.condition, ids["counters"], ids["flags"], card.id
                 )
 
         # Validate choices
         for choice in card.choices:
-            self._validate_choice(
-                choice, card.id, counter_ids, flag_ids, card_ids
-            )
+            self._validate_choice(choice, card.id, ids)
 
         # Validate text interpolation in card text
         if card.text:
             self._validate_text_interpolation(
-                card.text, card.id, character_ids, card.loc
+                card.text, card.id, ids["characters"], card.loc
+            )
+
+    def _validate_card_id_and_ring(self, card):
+        if card.ring:
+            if not card.id.startswith("_"):
+                self.result.add_error(
+                    "Ring card ID must start with '_': "
+                    f"'{card.id}' -> '_{card.id}'",
+                    card.loc,
+                )
+        elif card.id.startswith("_"):
+            self.result.add_error(
+                "Card ID starting with '_' requires ring modifier: "
+                f"'{card.id}'",
+                card.loc,
+            )
+
+    def _validate_bearer(self, card, character_ids, variant_ids):
+        if card.bearer.character_id not in character_ids:
+            self.result.add_error(
+                f"Undefined bearer: '{card.bearer.character_id}' "
+                f"(card: {card.id})",
+                card.bearer.loc or card.loc,
+            )
+
+        v_id = card.bearer.variant_id
+        if v_id and v_id not in variant_ids:
+            self.result.add_error(
+                f"Undefined variant: '{v_id}' " f"(card: {card.id})",
+                card.bearer.loc or card.loc,
             )
 
     def _validate_choice(
         self,
         choice: Choice,
         card_id: str,
-        counter_ids: set[str],
-        flag_ids: set[str],
-        card_ids: set[str],
+        ids: dict,
     ):
         """Validate a card choice and its commands."""
         for cmd in choice.commands:
-            self._validate_command(
-                cmd, card_id, choice.label, counter_ids, flag_ids, card_ids
-            )
+            self._validate_command(cmd, card_id, choice.label, ids)
 
     def _validate_command(
         self,
         cmd: Command,
         card_id: str,
         choice_label: str,
-        counter_ids: set[str],
-        flag_ids: set[str],
-        card_ids: set[str],
+        ids: dict,
     ):
         """Validate a single command."""
         context = f"card: {card_id}, choice: '{choice_label}'"
 
         if isinstance(cmd, CounterMod):
-            if cmd.counter_id not in counter_ids:
-                self.result.add_error(
-                    f"Undefined counter: '{cmd.counter_id}' ({context})",
+            self._check_id_ref(
+                cmd.counter_id,
+                ids["counters"],
+                f"Undefined counter: '{{}}' ({context})",
+                cmd.loc,
+            )
+        elif isinstance(cmd, (FlagSet, FlagClear)):
+            self._check_id_ref(
+                cmd.flag_id,
+                ids["flags"],
+                f"Undefined flag: '{{}}' ({context})",
+                cmd.loc,
+            )
+        elif isinstance(cmd, (CardQueue, CardTimed)):
+            self._check_id_ref(
+                cmd.card_id,
+                ids["cards"],
+                f"Undefined card: '{{}}' ({context})",
+                cmd.loc,
+            )
+        elif isinstance(cmd, CardBranch):
+            for branch_card_id in cmd.card_ids:
+                self._check_id_ref(
+                    branch_card_id,
+                    ids["cards"],
+                    f"Undefined card: '{{}}' ({context}, branch)",
                     cmd.loc,
                 )
 
-        elif isinstance(cmd, FlagSet):
-            if cmd.flag_id not in flag_ids:
-                self.result.add_error(
-                    f"Undefined flag: '{cmd.flag_id}' ({context})", cmd.loc
-                )
-
-        elif isinstance(cmd, FlagClear):
-            if cmd.flag_id not in flag_ids:
-                self.result.add_error(
-                    f"Undefined flag: '{cmd.flag_id}' ({context})", cmd.loc
-                )
-
-        elif isinstance(cmd, CardQueue):
-            if cmd.card_id not in card_ids:
-                self.result.add_error(
-                    f"Undefined card: '{cmd.card_id}' ({context})", cmd.loc
-                )
-
-        elif isinstance(cmd, CardBranch):
-            for branch_card_id in cmd.card_ids:
-                if branch_card_id not in card_ids:
-                    self.result.add_error(
-                        f"Undefined card: '{branch_card_id}' "
-                        f"({context}, branch)",
-                        cmd.loc,
-                    )
-
-        elif isinstance(cmd, CardTimed):
-            if cmd.card_id not in card_ids:
-                self.result.add_error(
-                    f"Undefined card: '{cmd.card_id}' ({context})", cmd.loc
-                )
+    def _check_id_ref(self, ref_id, id_set, msg_template, loc):
+        if ref_id not in id_set:
+            self.result.add_error(msg_template.format(ref_id), loc)
 
     def _validate_condition(
         self,
@@ -381,7 +364,7 @@ class Validator:
             char_id = match.group(1)
             if char_id not in character_ids:
                 self.result.add_error(
-                    f"Undefined character in text: "
+                    "Undefined character in text: "
                     f"'{{character:{char_id}}}' (card: {card_id})",
                     loc,
                 )

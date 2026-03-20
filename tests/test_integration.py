@@ -5,6 +5,13 @@ from pathlib import Path
 
 from tools.compiler.main import game_to_dict
 from tools.parser import Parser, validate_game
+from tools.parser.ast import (
+    CardBranch,
+    CounterMod,
+    FlagClear,
+    FlagSet,
+    RangeValue,
+)
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -127,8 +134,6 @@ class TestTutorialFeatures:
 
     def test_flag_operations_in_choices(self):
         """Tutorial should have both flag set and flag clear commands."""
-        from tools.parser.ast import FlagClear, FlagSet
-
         game = self._get_game()
         has_set = False
         has_clear = False
@@ -143,8 +148,6 @@ class TestTutorialFeatures:
         assert has_clear, "No FlagClear commands in tutorial"
 
     def test_card_branching(self):
-        from tools.parser.ast import CardBranch
-
         game = self._get_game()
         branches = []
         for card in game.cards:
@@ -155,8 +158,6 @@ class TestTutorialFeatures:
         assert len(branches) > 0, "No CardBranch commands in tutorial"
 
     def test_range_values_in_commands(self):
-        from tools.parser.ast import CounterMod, RangeValue
-
         game = self._get_game()
         ranges = []
         for card in game.cards:
@@ -177,9 +178,6 @@ class TestTutorialFeatures:
 class TestJsonCompleteness:
     def test_all_operators_in_json(self):
         """Test that all comparison operators serialize correctly."""
-        from tools.compiler.main import game_to_dict
-        from tools.parser import Parser
-
         source = (
             "X (counter:x)\n"
             "A (card:a)\n\trequire: counter:x < 30\n"

@@ -229,50 +229,79 @@ class Lexer:
 
     def _classify_line(self, raw: str, line_number: int) -> Line:
         """Classify a single line and extract its parts."""
-
-        # Check indent consistency
         self._check_indent_consistency(raw, line_number)
-
-        # Count indent
         stripped = raw.lstrip()
         indent = len(raw) - len(stripped)
 
-        # Empty line
         if not stripped:
             return Line(LineType.EMPTY, raw, line_number, indent)
-
-        # Comment (can be indented)
         if stripped.startswith("#"):
             return Line(LineType.COMMENT, raw, line_number, indent)
 
-        # Import statement: import "path/to/file.tahta" - must be at column 0
+        # Dispatch based on prefix
         if indent == 0 and stripped.startswith("import "):
-            rest = stripped[7:].strip()  # After 'import '
-            # Extract path from quotes
-            if (rest.startswith('"') and rest.endswith('"')) or (
-                rest.startswith("'") and rest.endswith("'")
-            ):
-                import_path = rest[1:-1]
-                return Line(
-                    LineType.IMPORT,
-                    raw,
-                    line_number,
-                    indent,
-                    import_path=import_path,
-                )
-
-        # Primary value: > value (card text) - MUST be indented
+            return self._parse_import(raw, stripped, line_number, indent)
         if stripped.startswith(">"):
-            self._require_indent(indent, line_number, "Content ('>')")
-            text = stripped[1:].strip()
+            return self._parse_primary_value(
+                raw, stripped, line_number, indent
+            )
+        if stripped.startswith("*"):
+            return self._parse_choice(raw, stripped, line_number, indent)
+
+        # Entity header (only at col 0)
+        entity_line = self._try_parse_entity_header(
+            stripped, raw, line_number, indent
+        )
+        if entity_line:
+            return entity_line
+
+        # Property: key: value
+        match = self.PROPERTY_PATTERN.match(stripped)
+        if match:
+            return self._parse_property(raw, match, line_number, indent)
+
+        # Unknown indented content
+        if indent > 0:
             return Line(
-                LineType.PRIMARY_VALUE, raw, line_number, indent, value=text
+                LineType.INDENTED, raw, line_number, indent, value=stripped
             )
 
-        # Choice with empty label (blind choice): * : commands
+        # Unknown fallback
+        return Line(
+            LineType.PROPERTY, raw, line_number, indent, key=stripped, value=""
+        )
+
+    def _parse_import(self, raw, stripped, line_number, indent):
+        rest = stripped[7:].strip()
+        if (rest.startswith('"') and rest.endswith('"')) or (
+            rest.startswith("'") and rest.endswith("'")
+        ):
+            return Line(
+                LineType.IMPORT,
+                raw,
+                line_number,
+                indent,
+                import_path=rest[1:-1],
+            )
+        return Line(
+            LineType.PROPERTY, raw, line_number, indent, key=stripped, value=""
+        )
+
+    def _parse_primary_value(self, raw, stripped, line_number, indent):
+        self._require_indent(indent, line_number, "Content ('>')")
+        return Line(
+            LineType.PRIMARY_VALUE,
+            raw,
+            line_number,
+            indent,
+            value=stripped[1:].strip(),
+        )
+
+    def _parse_choice(self, raw, stripped, line_number, indent):
+        self._require_indent(indent, line_number, "Choice ('*')")
+
         match = self.CHOICE_EMPTY_LABEL_PATTERN.match(stripped)
         if match:
-            self._require_indent(indent, line_number, "Choice ('*')")
             return Line(
                 LineType.CHOICE,
                 raw,
@@ -282,10 +311,8 @@ class Lexer:
                 choice_commands=match.group(1).strip(),
             )
 
-        # Choice: * label: commands
         match = self.CHOICE_PATTERN.match(stripped)
         if match:
-            self._require_indent(indent, line_number, "Choice ('*')")
             return Line(
                 LineType.CHOICE,
                 raw,
@@ -295,10 +322,8 @@ class Lexer:
                 choice_commands=match.group(2).strip(),
             )
 
-        # Choice without commands: * label
         match = self.CHOICE_NO_CMD_PATTERN.match(stripped)
         if match:
-            self._require_indent(indent, line_number, "Choice ('*')")
             return Line(
                 LineType.CHOICE,
                 raw,
@@ -308,41 +333,25 @@ class Lexer:
                 choice_commands="",
             )
 
-        # Entity header: Name (type:id, ...flags) - must be at column 0
-        entity_line = self._try_parse_entity_header(
-            stripped, raw, line_number, indent
-        )
-        if entity_line:
-            return entity_line
-
-        # Property: key: value - MUST be indented
-        match = self.PROPERTY_PATTERN.match(stripped)
-        if match:
-            if indent == 0:
-                from .errors import ParseError
-
-                raise ParseError(
-                    f"Property line must be indented ('{match.group(1)}')",
-                    SourceLocation(self.filename, line_number),
-                )
-            return Line(
-                LineType.PROPERTY,
-                raw,
-                line_number,
-                indent,
-                key=match.group(1),
-                value=match.group(2).strip(),
-            )
-
-        # Unknown indented content (fallback for weight blocks etc.)
-        if indent > 0:
-            return Line(
-                LineType.INDENTED, raw, line_number, indent, value=stripped
-            )
-
-        # Unknown - treat as property without value for better error messages
         return Line(
             LineType.PROPERTY, raw, line_number, indent, key=stripped, value=""
+        )
+
+    def _parse_property(self, raw, match, line_number, indent):
+        if indent == 0:
+            from .errors import ParseError
+
+            raise ParseError(
+                f"Property line must be indented ('{match.group(1)}')",
+                SourceLocation(self.filename, line_number),
+            )
+        return Line(
+            LineType.PROPERTY,
+            raw,
+            line_number,
+            indent,
+            key=match.group(1),
+            value=match.group(2).strip(),
         )
 
 
