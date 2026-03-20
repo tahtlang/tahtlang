@@ -157,6 +157,16 @@ class Parser:
     VARIANT_KEYS = {"prompt"}
     CHARACTER_KEYS = {"prompt"}
 
+    @staticmethod
+    def _parse_bool(value: str, default: bool = True) -> bool:
+        """Parse a boolean property value.
+
+        'true' -> True, 'false' -> False, '' -> default
+        """
+        if not value:
+            return default
+        return value.lower().strip() == "true"
+
     def _parse_settings(self, name: str, entity_id: str, header: Line):
         """Parse settings entity."""
         props = self._collect_properties(valid_keys=self.SETTINGS_KEYS)
@@ -165,21 +175,13 @@ class Parser:
         if "starting_flags" in props:
             starting_flags = tuple(self._parse_flag_list(props["starting_flags"]))
 
-        game_over_on_zero = True
-        if "game_over_on_zero" in props:
-            game_over_on_zero = props["game_over_on_zero"].lower() == "true"
-
-        game_over_on_max = True
-        if "game_over_on_max" in props:
-            game_over_on_max = props["game_over_on_max"].lower() == "true"
-
         self._settings = Settings(
             id=entity_id or "main",
             name=name or "",
             description=self._strip_quotes(props.get("description", "")),
             starting_flags=starting_flags,
-            game_over_on_zero=game_over_on_zero,
-            game_over_on_max=game_over_on_max,
+            game_over_on_zero=self._parse_bool(props.get("game_over_on_zero", "")),
+            game_over_on_max=self._parse_bool(props.get("game_over_on_max", "")),
             loc=self._make_loc(header)
         )
 
@@ -408,34 +410,24 @@ class Parser:
     # =========================================================================
 
     def _parse_bearer(self, value: str, line: Line) -> Bearer:
-        """
-        Parse bearer value with optional variant.
+        """Parse bearer with optional variant.
 
-        Format: 'character:sadrazam (variant:angry)' -> Bearer('sadrazam', 'angry')
-        No variant: 'character:sadrazam' -> Bearer('sadrazam', None)
+        'character:advisor'                -> Bearer('advisor', None)
+        'character:advisor (variant:angry)' -> Bearer('advisor', 'angry')
         """
         value = value.strip()
-        variant_id: Optional[str] = None
+        loc = self._make_loc(line)
 
-        # Check if there's a parenthesis with variant
-        if '(' in value and value.endswith(')'):
-            paren_start = value.index('(')
-            character = value[:paren_start].strip()
-            variant = value[paren_start + 1:-1].strip()
+        # No variant
+        if '(' not in value or not value.endswith(')'):
+            char_id = self._strip_type_prefix(value, 'character')
+            return Bearer(character_id=char_id, variant_id=None, loc=loc)
 
-            # Strip prefix from character if present
-            character_id = self._strip_type_prefix(character, 'character')
-            # Strip prefix from variant if present
-            variant_id = self._strip_type_prefix(variant, 'variant')
-        else:
-            # No variant - just strip prefix if present
-            character_id = self._strip_type_prefix(value, 'character')
-
-        return Bearer(
-            character_id=character_id,
-            variant_id=variant_id,
-            loc=self._make_loc(line)
-        )
+        # Has variant: 'character:advisor (variant:angry)'
+        paren_start = value.index('(')
+        char_id = self._strip_type_prefix(value[:paren_start].strip(), 'character')
+        variant_id = self._strip_type_prefix(value[paren_start + 1:-1].strip(), 'variant')
+        return Bearer(character_id=char_id, variant_id=variant_id, loc=loc)
 
     def _strip_type_prefix(self, value: str, expected_type: str) -> str:
         """
@@ -663,89 +655,62 @@ class Parser:
             return None
 
     def _parse_weight_line(self, value: str, line: Line) -> Optional[Weight]:
-        """
-        Parse weight with optional condition.
-        Examples:
-        - '1.0'                              -> Weight(1.0, None)
-        - '2.0 when counter:hazine < 30'     -> Weight(2.0, CounterCondition(...))
-        - '0 when flag:war'                  -> Weight(0.0, FlagCondition(...))
+        """Parse weight with optional condition.
+
+        '1.0'                          -> Weight(1.0, None)
+        '2.0 when counter:treasury < 30' -> Weight(2.0, CounterCondition(...))
+        '0 when flag:war'              -> Weight(0.0, FlagCondition(...))
         """
         value = value.strip()
         if not value:
             return None
 
-        loc = self._make_loc(line)
-
-        # Check if there's a 'when' keyword
+        # Split on ' when ' if present
+        weight_str = value
+        condition = None
         when_pos = value.lower().find(' when ')
         if when_pos > 0:
             weight_str = value[:when_pos].strip()
-            condition_str = value[when_pos + 6:].strip()  # 6 = len(' when ')
-            try:
-                weight_value = float(weight_str)
-                condition = self._parse_single_condition(condition_str, line)
-                return Weight(value=weight_value, condition=condition, loc=loc)
-            except ValueError:
-                raise self._error(f"Invalid weight value: '{weight_str}'", line)
-        else:
-            # No condition, just a number
-            try:
-                return Weight(value=float(value), condition=None, loc=loc)
-            except ValueError:
-                raise self._error(f"Invalid weight value: '{value}'", line)
+            condition = self._parse_single_condition(value[when_pos + 6:].strip(), line)
+
+        try:
+            return Weight(
+                value=float(weight_str),
+                condition=condition,
+                loc=self._make_loc(line),
+            )
+        except ValueError:
+            raise self._error(f"Invalid weight value: '{weight_str}'", line)
+
+    @staticmethod
+    def _split_bracketed_list(value: str) -> list[str]:
+        """Split a comma-separated list, stripping optional brackets.
+
+        '[a, b, c]' -> ['a', 'b', 'c']
+        'a, b'      -> ['a', 'b']
+        """
+        value = value.strip()
+        if value.startswith('[') and value.endswith(']'):
+            value = value[1:-1].strip()
+        return [p.strip() for p in value.split(',') if p.strip()]
 
     def _parse_flag_list(self, value: str) -> list[str]:
+        """Parse a list of flags, stripping 'flag:' prefix.
+
+        '[flag:intro, flag:war]' -> ['intro', 'war']
+        'flag:intro'             -> ['intro']
         """
-        Parse a list of flags.
-        - 'flag:intro'              -> ['intro']
-        - 'flag:intro, flag:war'    -> ['intro', 'war']
-        - '[flag:intro, flag:war]'  -> ['intro', 'war']  (bracketed list)
-        """
-        flags = []
-        value = value.strip()
-
-        # Strip brackets if present
-        if value.startswith('[') and value.endswith(']'):
-            value = value[1:-1].strip()
-
-        # Split by comma
-        parts = value.split(',')
-
-        for part in parts:
-            part = part.strip()
-            # Remove flag: prefix
-            if part.lower().startswith('flag:'):
-                part = part[5:]
-            if part:
-                flags.append(part)
-
-        return flags
+        return [
+            self._strip_type_prefix(part, 'flag')
+            for part in self._split_bracketed_list(value)
+        ]
 
     def _parse_reference_list(self, value: str) -> list[str]:
+        """Parse a list of typed references, preserving prefix.
+
+        '[counter:a, counter:b]' -> ['counter:a', 'counter:b']
         """
-        Parse a bracketed list of typed references.
-        - '[counter:a, counter:b]'    -> ['counter:a', 'counter:b']
-        - '[character:merchant]'      -> ['character:merchant']
-        - 'counter:a, counter:b'      -> ['counter:a', 'counter:b']  (no brackets)
-
-        Preserves the type prefix for later validation.
-        """
-        refs = []
-        value = value.strip()
-
-        # Strip brackets if present
-        if value.startswith('[') and value.endswith(']'):
-            value = value[1:-1].strip()
-
-        # Split by comma
-        parts = value.split(',')
-
-        for part in parts:
-            part = part.strip()
-            if part:
-                refs.append(part)
-
-        return refs
+        return self._split_bracketed_list(value)
 
     def _parse_condition_list(self, value: str, line: Line) -> list[Condition]:
         """
@@ -774,15 +739,16 @@ class Parser:
 
         return conditions
 
-    def _parse_single_condition(self, part: str, line: Line) -> Optional[Condition]:
-        """
-        Parse a single condition.
+    # Operators ordered longest first for greedy matching
+    CONDITION_OPERATORS = ('<=', '>=', '<', '>', '=')
 
-        - 'flag:tower'              -> FlagCondition('tower')
-        - '!flag:war'               -> FlagCondition('war', negated=True)
-        - 'counter:hazine < 30'     -> CounterCondition('hazine', '<', 30)
-        - 'counter:ordu > 50'       -> CounterCondition('ordu', '>', 50)
-        - 'counter:nb_war = 1'      -> CounterCondition('nb_war', '=', 1)
+    def _parse_single_condition(self, part: str, line: Line) -> Optional[Condition]:
+        """Parse a single condition.
+
+        'flag:tower'          -> FlagCondition('tower')
+        '!flag:war'           -> FlagCondition('war', negated=True)
+        'counter:treasury < 30' -> CounterCondition('treasury', '<', 30)
+        'counter:army >= 50'  -> CounterCondition('army', '>=', 50)
         """
         part = part.strip()
         loc = self._make_loc(line)
@@ -793,42 +759,43 @@ class Parser:
             negated = True
             part = part[1:].strip()
 
-        # Counter condition: 'counter:hazine < 30' or 'counter:nb_war = 1'
-        # Supports: <, >, =, <=, >=
-        if '<' in part or '>' in part or '=' in part:
-            # Find the operator (check two-char operators first)
-            op_pos = -1
-            op = ''
-            for i, ch in enumerate(part):
-                if ch in '<>':
-                    # Check for <= or >=
-                    if i + 1 < len(part) and part[i + 1] == '=':
-                        op_pos = i
-                        op = part[i:i+2]  # '<=' or '>='
-                        break
-                    else:
-                        op_pos = i
-                        op = ch
-                        break
-                elif ch == '=':
-                    op_pos = i
-                    op = ch
-                    break
-
-            if op_pos > 0:
-                left = part[:op_pos].strip()
-                right = part[op_pos + len(op):].strip()
-
-                counter_id = self._strip_type_prefix(left, 'counter')
-                try:
-                    value = int(right)
-                    return CounterCondition(counter_id=counter_id, operator=op, value=value, loc=loc)
-                except ValueError:
-                    pass
+        # Try counter condition: look for an operator
+        counter_cond = self._try_parse_counter_condition(part, loc)
+        if counter_cond:
+            return counter_cond
 
         # Flag condition: 'flag:tower' or just 'tower' (legacy)
         flag_id = self._strip_type_prefix(part, 'flag')
         return FlagCondition(flag_id=flag_id, negated=negated, loc=loc)
+
+    def _try_parse_counter_condition(
+        self, part: str, loc: SourceLocation
+    ) -> Optional[CounterCondition]:
+        """Try to parse 'counter:id OP value'. Returns None if not a counter condition.
+
+        'counter:treasury < 30' -> CounterCondition('treasury', '<', 30)
+        'counter:army >= 50'    -> CounterCondition('army', '>=', 50)
+        'flag:war'              -> None (not a counter condition)
+        """
+        for op in self.CONDITION_OPERATORS:
+            if op not in part:
+                continue
+            op_pos = part.index(op)
+            if op_pos == 0:
+                continue
+            left = part[:op_pos].strip()
+            right = part[op_pos + len(op):].strip()
+            counter_id = self._strip_type_prefix(left, 'counter')
+            try:
+                return CounterCondition(
+                    counter_id=counter_id,
+                    operator=op,
+                    value=int(right),
+                    loc=loc,
+                )
+            except ValueError:
+                continue
+        return None
 
     def _strip_quotes(self, value: str) -> str:
         """Remove surrounding quotes from a string."""
