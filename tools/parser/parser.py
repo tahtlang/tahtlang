@@ -151,9 +151,15 @@ class Parser:
             column=line.indent
         )
 
+    SETTINGS_KEYS = {"description", "starting_flags", "game_over_on_zero", "game_over_on_max"}
+    COUNTER_KEYS = {"start", "icon", "color", "source", "aggregate", "track"}
+    FLAG_KEYS = {"bind"}
+    VARIANT_KEYS = {"prompt"}
+    CHARACTER_KEYS = {"prompt"}
+
     def _parse_settings(self, name: str, entity_id: str, header: Line):
         """Parse settings entity."""
-        props = self._collect_properties()
+        props = self._collect_properties(valid_keys=self.SETTINGS_KEYS)
 
         starting_flags: tuple[str, ...] = ()
         if "starting_flags" in props:
@@ -210,7 +216,7 @@ class Parser:
                 source: [character:merchant]
                 track: yes
         """
-        props = self._collect_properties(primary_key="start")
+        props = self._collect_properties(primary_key="start", valid_keys=self.COUNTER_KEYS)
 
         # Primary value is start, parse as int
         start_str = props.get("start", "50")
@@ -245,7 +251,7 @@ class Parser:
 
     def _parse_flag(self, name: str, entity_id: str, modifiers: set[Modifier], header: Line):
         """Parse a flag entity."""
-        props = self._collect_properties()
+        props = self._collect_properties(valid_keys=self.FLAG_KEYS)
 
         # Parse bind property (strip character: prefix if present)
         bind = None
@@ -263,7 +269,7 @@ class Parser:
 
     def _parse_variant(self, name: str, entity_id: str, header: Line):
         """Parse a variant entity (emotion, state, pose)."""
-        props = self._collect_properties()
+        props = self._collect_properties(valid_keys=self.VARIANT_KEYS)
 
         variant = Variant(
             id=entity_id,
@@ -275,7 +281,7 @@ class Parser:
 
     def _parse_character(self, name: str, entity_id: str, header: Line):
         """Parse a character entity."""
-        props = self._collect_properties()
+        props = self._collect_properties(valid_keys=self.CHARACTER_KEYS)
 
         character = Character(
             id=entity_id,
@@ -367,6 +373,8 @@ class Parser:
                 weights.append(weight)
         elif key == "lockturn":
             lockturn = self._parse_lockturn(value, line)
+        else:
+            raise self._error(f"Unknown card property: '{key}'", line)
 
         return bearer, require, weights, lockturn
 
@@ -824,11 +832,16 @@ class Parser:
                 return value[1:-1]
         return value
 
-    def _collect_properties(self, primary_key: str = "_primary") -> dict[str, str]:
+    def _collect_properties(
+        self,
+        primary_key: str = "_primary",
+        valid_keys: Optional[set[str]] = None,
+    ) -> dict[str, str]:
         """
         Collect all property lines until next entity or special line.
 
         The `> value` syntax sets the primary_key field.
+        If valid_keys is given, raises error on unknown property keys.
         """
         props = {}
 
@@ -846,6 +859,10 @@ class Parser:
                 continue
 
             if line.type == LineType.PROPERTY and line.key:
+                if valid_keys is not None and line.key not in valid_keys:
+                    raise self._error(
+                        f"Unknown property: '{line.key}'", line
+                    )
                 props[line.key] = line.value or ""
                 self._advance()
                 continue

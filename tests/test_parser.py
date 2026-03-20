@@ -659,6 +659,36 @@ class TestParserErrors:
         with pytest.raises(ParseError, match="Unexpected line"):
             parse("this is not valid syntax at all")
 
+    def test_unknown_card_property(self):
+        source = "C (card:c)\n\tfoobar: something"
+        with pytest.raises(ParseError, match="Unknown card property"):
+            parse(source)
+
+    def test_unknown_settings_property(self):
+        source = "S (settings:main)\n\tfoobar: something"
+        with pytest.raises(ParseError, match="Unknown property"):
+            parse(source)
+
+    def test_unknown_counter_property(self):
+        source = "X (counter:x)\n\tfoobar: something"
+        with pytest.raises(ParseError, match="Unknown property"):
+            parse(source)
+
+    def test_unknown_flag_property(self):
+        source = "F (flag:f)\n\tfoobar: something"
+        with pytest.raises(ParseError, match="Unknown property"):
+            parse(source)
+
+    def test_unknown_character_property(self):
+        source = "C (character:c)\n\tfoobar: something"
+        with pytest.raises(ParseError, match="Unknown property"):
+            parse(source)
+
+    def test_unknown_variant_property(self):
+        source = "V (variant:v)\n\tfoobar: something"
+        with pytest.raises(ParseError, match="Unknown property"):
+            parse(source)
+
     def test_unknown_entity_type(self):
         # This won't be recognized as an entity header by the lexer
         # so it will be an unexpected line instead
