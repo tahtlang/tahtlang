@@ -602,55 +602,49 @@ class Parser:
         return Trigger(trigger_type=trigger_type, value=value, loc=self._make_loc(line))
 
     def _parse_value_or_range(self, s: str, line: Line) -> Optional[ValueOrRange]:
-        """
-        Parse a value or range.
+        """Parse a value or range.
 
-        Formats:
-        - '20'    -> FixedValue(20)
-        - '10?30' -> RangeValue(10, 30)    # 10 to 30
-        - '10?'   -> RangeValue(0, 10)     # 0 to 10 (shorthand)
-        - '?20'   -> RangeValue(0, 20)     # 0 to 20 (shorthand)
-        - '-10?'  -> RangeValue(-10, 0)    # -10 to 0 (negative shorthand)
+        '20'    -> FixedValue(20)
+        '10?30' -> RangeValue(10, 30)
+        '10?'   -> RangeValue(0, 10)
+        '?20'   -> RangeValue(0, 20)
+        '-10?'  -> RangeValue(-10, 0)
         """
         s = s.strip()
+        if '?' in s:
+            return self._parse_range(s, line)
+        try:
+            return FixedValue(value=int(s), loc=self._make_loc(line))
+        except ValueError:
+            return None
+
+    def _parse_range(self, s: str, line: Line) -> Optional[RangeValue]:
+        """Parse a range value split by '?'.
+
+        '10?30' -> RangeValue(10, 30)   both sides given
+        '10?'   -> RangeValue(0, 10)    shorthand: 0 to N
+        '-10?'  -> RangeValue(-10, 0)   shorthand: N to 0 (negative)
+        '?20'   -> RangeValue(0, 20)    shorthand: 0 to N
+        """
+        parts = s.split('?')
+        if len(parts) != 2:
+            return None
+        left = parts[0].strip()
+        right = parts[1].strip()
         loc = self._make_loc(line)
 
-        # Check for range syntax with ?
-        if '?' in s:
-            parts = s.split('?')
-            if len(parts) == 2:
-                left = parts[0].strip()
-                right = parts[1].strip()
-
-                try:
-                    # Case: '10?30' -> range 10 to 30
-                    if left and right:
-                        min_val = int(left)
-                        max_val = int(right)
-                        return RangeValue(min_value=min_val, max_value=max_val, loc=loc)
-
-                    # Case: '10?' -> range 0 to 10 (or -10 to 0 if negative)
-                    elif left and not right:
-                        val = int(left)
-                        if val >= 0:
-                            return RangeValue(min_value=0, max_value=val, loc=loc)
-                        else:
-                            return RangeValue(min_value=val, max_value=0, loc=loc)
-
-                    # Case: '?20' -> range 0 to 20
-                    elif not left and right:
-                        max_val = int(right)
-                        return RangeValue(min_value=0, max_value=max_val, loc=loc)
-
-                except ValueError:
-                    return None
-        else:
-            # Fixed value
-            try:
-                return FixedValue(value=int(s), loc=loc)
-            except ValueError:
-                return None
-
+        try:
+            if left and right:
+                return RangeValue(int(left), int(right), loc=loc)
+            if left:
+                val = int(left)
+                if val >= 0:
+                    return RangeValue(0, val, loc=loc)
+                return RangeValue(val, 0, loc=loc)
+            if right:
+                return RangeValue(0, int(right), loc=loc)
+        except ValueError:
+            pass
         return None
 
     def _parse_unsigned_int(self, s: str) -> Optional[int]:
