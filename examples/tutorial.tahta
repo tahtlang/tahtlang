@@ -78,12 +78,12 @@ Doctor (character:doctor)
 #
 
 Welcome (card:welcome)
-    bearer: character:advisor
-    weight: 100
-    require: flag:start
-    lockturn: dispose
-    > Welcome to the throne, Your Majesty. The kingdom awaits your wisdom.
-    * I am ready to rule: -flag:start, card:_tutorial_1
+	bearer: character:advisor
+	weight: 100
+	require: flag:start
+	lockturn: dispose
+	> Welcome to the throne, Your Majesty. The kingdom awaits your wisdom.
+	* I am ready to rule: -flag:start, card:_tutorial_1
 
 #
 # Ring cards (card:_xxx, ring) come from queue, not randomly from pool.
@@ -92,14 +92,14 @@ Welcome (card:welcome)
 #
 
 Tutorial 1 (card:_tutorial_1, ring)
-    bearer: character:advisor
-    > Swipe left or right to make decisions. Each choice affects your kingdom.
-    * I understand: card:_tutorial_2
+	bearer: character:advisor
+	> Swipe left or right to make decisions. Each choice affects your kingdom.
+	* I understand: card:_tutorial_2
 
 Tutorial 2 (card:_tutorial_2, ring)
-    bearer: character:advisor
-    > Keep all four pillars balanced. If any reaches zero or maximum, your reign ends.
-    * Show me the pillars: card:_tutorial_3
+	bearer: character:advisor
+	> Keep all four pillars balanced. If any reaches zero or maximum, your reign ends.
+	* Show me the pillars: card:_tutorial_3
 
 #
 # Variant usage: character:advisor (variant:happy)
@@ -107,9 +107,9 @@ Tutorial 2 (card:_tutorial_2, ring)
 #
 
 Tutorial 3 (card:_tutorial_3, ring)
-    bearer: character:advisor (variant:happy)
-    > Treasury, Army, People, Faith. Balance them wisely, Your Majesty.
-    * Let us begin:
+	bearer: character:advisor (variant:happy)
+	> Treasury, Army, People, Faith. Balance them wisely, Your Majesty.
+	* Let us begin:
 
 # =============================================================================
 # PART 3: REGULAR CARDS
@@ -125,13 +125,13 @@ Tutorial 3 (card:_tutorial_3, ring)
 #
 
 Tax Collection (card:tax-collection)
-    bearer: character:merchant
-    weight: 1.0
-    weight: 2.0 when counter:treasury < 30
-    lockturn: 10
-    > The treasury runs low, Your Majesty. Shall we raise taxes?
-    * Raise taxes: counter:treasury 25, counter:people -15
-    * Keep current rates: counter:treasury -5
+	bearer: character:merchant
+	weight: 1.0
+	weight: 2.0 when counter:treasury < 30
+	lockturn: 10
+	> The treasury runs low, Your Majesty. Shall we raise taxes?
+	* Raise taxes: counter:treasury 25, counter:people -15
+	* Keep current rates: counter:treasury -5
 
 #
 # Multiple effects are separated by commas.
@@ -140,25 +140,25 @@ Tax Collection (card:tax-collection)
 #
 
 Military Funding (card:military-funding)
-    bearer: character:general
-    weight: 1.0
-    lockturn: 8
-    > Our soldiers need better equipment, Your Majesty.
-    * Fund the army: counter:treasury -20, counter:army 15
-    * The army is fine: counter:army -10
+	bearer: character:general
+	weight: 1.0
+	lockturn: 8
+	> Our soldiers need better equipment, Your Majesty.
+	* Fund the army: counter:treasury -20, counter:army 15
+	* The army is fine: counter:army -10
 
 #
 # Card with three choices - choice count is unlimited.
 #
 
 Church Donation (card:church-donation)
-    bearer: character:priest
-    weight: 1.0
-    lockturn: 12
-    > The church requests a donation for the poor, Your Majesty.
-    * Generous donation: counter:treasury -25, counter:faith 20, counter:people 5
-    * Modest donation: counter:treasury -10, counter:faith 5
-    * Decline: counter:faith -15
+	bearer: character:priest
+	weight: 1.0
+	lockturn: 12
+	> The church requests a donation for the poor, Your Majesty.
+	* Generous donation: counter:treasury -25, counter:faith 20, counter:people 5
+	* Modest donation: counter:treasury -10, counter:faith 5
+	* Decline: counter:faith -15
 
 # =============================================================================
 # PART 4: CONDITIONAL CARDS
@@ -172,13 +172,13 @@ Church Donation (card:church-donation)
 #
 
 War Declaration (card:war-declaration)
-    bearer: character:general (variant:worried)
-    weight: 0.5
-    require: !flag:war, counter:army > 40
-    lockturn: 30
-    > A neighboring kingdom masses troops at our border!
-    * Prepare for war: +flag:war, counter:army -10, card:_war_battle@5
-    * Negotiate peace: counter:treasury -30, counter:people 10
+	bearer: character:general (variant:worried)
+	weight: 0.5
+	require: !flag:war, counter:army > 40
+	lockturn: 30
+	> A neighboring kingdom masses troops at our border!
+	* Prepare for war: +flag:war, counter:army -10, card:_war_battle@5
+	* Negotiate peace: counter:treasury -30, counter:people 10
 
 #
 # +flag:war -> activate war flag
@@ -196,11 +196,11 @@ War Declaration (card:war-declaration)
 #
 
 War Battle (card:_war_battle, ring)
-    bearer: character:general
-    require: flag:war
-    > The battle rages! What are your orders, Your Majesty?
-    * Full attack: counter:army -20?-10, [card:_war_victory, card:_war_defeat]
-    * Defensive position: counter:army -5, card:_war_stalemate
+	bearer: character:general
+	require: flag:war
+	> The battle rages! What are your orders, Your Majesty?
+	* Full attack: counter:army -20?-10, [card:_war_victory, card:_war_defeat]
+	* Defensive position: counter:army -5, card:_war_stalemate
 
 #
 # counter:army -20?-10 -> random between -20 and -10
@@ -214,23 +214,23 @@ War Battle (card:_war_battle, ring)
 #
 
 War Victory (card:_war_victory, ring)
-    bearer: character:general (variant:happy)
-    require: counter:army > 25
-    > Victory! The enemy retreats in disgrace!
-    * Celebrate: -flag:war, counter:people 20, counter:treasury 30
+	bearer: character:general (variant:happy)
+	require: counter:army > 25
+	> Victory! The enemy retreats in disgrace!
+	* Celebrate: -flag:war, counter:people 20, counter:treasury 30
 
 War Defeat (card:_war_defeat, ring)
-    bearer: character:general (variant:worried)
-    require: counter:army <= 25
-    > We have lost... Our forces are decimated.
-    * Accept defeat: -flag:war, counter:army -20, counter:people -15, counter:treasury -20
+	bearer: character:general (variant:worried)
+	require: counter:army <= 25
+	> We have lost... Our forces are decimated.
+	* Accept defeat: -flag:war, counter:army -20, counter:people -15, counter:treasury -20
 
 War Stalemate (card:_war_stalemate, ring)
-    bearer: character:general
-    require: flag:war
-    > Neither side gains ground. The war drags on.
-    * Continue fighting: card:_war_battle@3
-    * Negotiate peace: -flag:war, counter:treasury -25
+	bearer: character:general
+	require: flag:war
+	> Neither side gains ground. The war drags on.
+	* Continue fighting: card:_war_battle@3
+	* Negotiate peace: -flag:war, counter:treasury -25
 
 # =============================================================================
 # PART 6: SPECIAL EVENTS
@@ -242,32 +242,32 @@ War Stalemate (card:_war_stalemate, ring)
 #
 
 Plague Outbreak (card:plague-outbreak)
-    bearer: character:doctor
-    weight: 0.3
-    require: !flag:plague
-    lockturn: once
-    > A terrible plague spreads through the city, Your Majesty!
-    * Quarantine the sick: +flag:plague, counter:people -10, counter:treasury -15, card:_plague_progress@10
-    * Pray for salvation: +flag:plague, counter:faith 10, counter:people -20, card:_plague_progress@8
+	bearer: character:doctor
+	weight: 0.3
+	require: !flag:plague
+	lockturn: once
+	> A terrible plague spreads through the city, Your Majesty!
+	* Quarantine the sick: +flag:plague, counter:people -10, counter:treasury -15, card:_plague_progress@10
+	* Pray for salvation: +flag:plague, counter:faith 10, counter:people -20, card:_plague_progress@8
 
 Plague Progress (card:_plague_progress, ring)
-    bearer: character:doctor
-    require: flag:plague
-    > The plague continues. What shall we do?
-    * Burn the infected houses: counter:treasury -20, counter:people -5, [card:_plague_end, card:_plague_worse]
-    * Wait and pray: counter:faith 5, [card:_plague_end, card:_plague_worse]
+	bearer: character:doctor
+	require: flag:plague
+	> The plague continues. What shall we do?
+	* Burn the infected houses: counter:treasury -20, counter:people -5, [card:_plague_end, card:_plague_worse]
+	* Wait and pray: counter:faith 5, [card:_plague_end, card:_plague_worse]
 
 Plague Ends (card:_plague_end, ring)
-    bearer: character:doctor (variant:happy)
-    require: counter:people > 30
-    > The plague has passed! The survivors celebrate.
-    * Thank the heavens: -flag:plague, counter:faith 15, counter:people 5
+	bearer: character:doctor (variant:happy)
+	require: counter:people > 30
+	> The plague has passed! The survivors celebrate.
+	* Thank the heavens: -flag:plague, counter:faith 15, counter:people 5
 
 Plague Worsens (card:_plague_worse, ring)
-    bearer: character:doctor (variant:worried)
-    require: counter:people <= 30
-    > The plague worsens. Bodies fill the streets.
-    * Desperate measures: -flag:plague, counter:people -15, counter:treasury -10
+	bearer: character:doctor (variant:worried)
+	require: counter:people <= 30
+	> The plague worsens. Bodies fill the streets.
+	* Desperate measures: -flag:plague, counter:people -15, counter:treasury -10
 
 # =============================================================================
 # PART 7: LONG-TERM PROJECTS
@@ -279,18 +279,18 @@ Plague Worsens (card:_plague_worse, ring)
 #
 
 Cathedral Construction (card:cathedral-start)
-    bearer: character:priest
-    weight: 0.5
-    require: counter:treasury > 50, counter:cathedral = 0
-    lockturn: dispose
-    > Your Majesty, shall we build a grand cathedral to honor the gods?
-    * Begin construction: counter:treasury -40, counter:faith 10, card:_cathedral_complete@20
-    * Perhaps another time: counter:faith -5
+	bearer: character:priest
+	weight: 0.5
+	require: counter:treasury > 50, counter:cathedral = 0
+	lockturn: dispose
+	> Your Majesty, shall we build a grand cathedral to honor the gods?
+	* Begin construction: counter:treasury -40, counter:faith 10, card:_cathedral_complete@20
+	* Perhaps another time: counter:faith -5
 
 Cathedral Complete (card:_cathedral_complete, ring)
-    bearer: character:priest (variant:happy)
-    > The cathedral is complete! Its spires reach toward the heavens!
-    * Celebrate: counter:cathedral 1, counter:faith 30, counter:people 15
+	bearer: character:priest (variant:happy)
+	> The cathedral is complete! Its spires reach toward the heavens!
+	* Celebrate: counter:cathedral 1, counter:faith 30, counter:people 15
 
 #
 # counter:cathedral = 0 -> only show if not yet built

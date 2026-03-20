@@ -23,75 +23,75 @@ Merchant (character:merchant)
 # Cards
 
 Welcome (card:welcome)
-    bearer: character:advisor
-    weight: 100
-    require: flag:start
-    lockturn: dispose
-    > Welcome to your kingdom, Your Majesty. Your reign begins now.
-    * I am ready: -flag:start, card:_first_decision
+	bearer: character:advisor
+	weight: 100
+	require: flag:start
+	lockturn: dispose
+	> Welcome to your kingdom, Your Majesty. Your reign begins now.
+	* I am ready: -flag:start, card:_first_decision
 
 First Decision (card:_first_decision, ring)
-    bearer: character:advisor
-    > Your treasury needs attention. What shall we do?
-    * Raise taxes: counter:treasury 20, counter:people -10
-    * Cut spending: counter:treasury 10, counter:army -10
+	bearer: character:advisor
+	> Your treasury needs attention. What shall we do?
+	* Raise taxes: counter:treasury 20, counter:people -10
+	* Cut spending: counter:treasury 10, counter:army -10
 
 Tax Proposal (card:tax-proposal)
-    bearer: character:merchant
-    weight: 1.0
-    weight: 2.0 when counter:treasury < 30
-    lockturn: 10
-    > The merchants request lower taxes, Your Majesty.
-    * Lower taxes: counter:treasury -15, counter:people 10
-    * Keep current rates: counter:people -5
+	bearer: character:merchant
+	weight: 1.0
+	weight: 2.0 when counter:treasury < 30
+	lockturn: 10
+	> The merchants request lower taxes, Your Majesty.
+	* Lower taxes: counter:treasury -15, counter:people 10
+	* Keep current rates: counter:people -5
 
 Military Request (card:military-request)
-    bearer: character:general
-    weight: 1.0
-    lockturn: 8
-    > We need more soldiers, Your Majesty.
-    * Recruit more: counter:army 15, counter:treasury -20
-    * The army is sufficient: counter:army -5
+	bearer: character:general
+	weight: 1.0
+	lockturn: 8
+	> We need more soldiers, Your Majesty.
+	* Recruit more: counter:army 15, counter:treasury -20
+	* The army is sufficient: counter:army -5
 
 Church Donation (card:church-donation)
-    bearer: character:priest
-    weight: 1.0
-    lockturn: 12
-    > The church asks for your generous donation.
-    * Donate generously: counter:church 20, counter:treasury -25
-    * A modest gift: counter:church 5, counter:treasury -5
-    * Decline: counter:church -15
+	bearer: character:priest
+	weight: 1.0
+	lockturn: 12
+	> The church asks for your generous donation.
+	* Donate generously: counter:church 20, counter:treasury -25
+	* A modest gift: counter:church 5, counter:treasury -5
+	* Decline: counter:church -15
 
 War Declaration (card:war-declaration)
-    bearer: character:general
-    weight: 0.5
-    require: !flag:war, counter:army > 40
-    lockturn: 30
-    > A neighboring kingdom threatens our borders!
-    * Prepare for war: +flag:war, counter:army -10, card:_war_battle@5
-    * Seek peace: counter:treasury -30, counter:people 10
+	bearer: character:general
+	weight: 0.5
+	require: !flag:war, counter:army > 40
+	lockturn: 30
+	> A neighboring kingdom threatens our borders!
+	* Prepare for war: +flag:war, counter:army -10, card:_war_battle@5
+	* Seek peace: counter:treasury -30, counter:people 10
 
 War Battle (card:_war_battle, ring)
-    bearer: character:general
-    require: flag:war
-    > The battle rages on. What are your orders?
-    * Attack: counter:army -20?-10, [card:_war_victory, card:_war_defeat]
-    * Defend: counter:army -10, card:_war_stalemate
+	bearer: character:general
+	require: flag:war
+	> The battle rages on. What are your orders?
+	* Attack: counter:army -20?-10, [card:_war_victory, card:_war_defeat]
+	* Defend: counter:army -10, card:_war_stalemate
 
 War Victory (card:_war_victory, ring)
-    bearer: character:general
-    require: counter:army > 30
-    > We have won! The enemy retreats!
-    * Celebrate: -flag:war, counter:people 20, counter:treasury 30
+	bearer: character:general
+	require: counter:army > 30
+	> We have won! The enemy retreats!
+	* Celebrate: -flag:war, counter:people 20, counter:treasury 30
 
 War Defeat (card:_war_defeat, ring)
-    bearer: character:general
-    require: counter:army <= 30
-    > We have lost the battle...
-    * Retreat: -flag:war, counter:army -20, counter:people -15
+	bearer: character:general
+	require: counter:army <= 30
+	> We have lost the battle...
+	* Retreat: -flag:war, counter:army -20, counter:people -15
 
 War Stalemate (card:_war_stalemate, ring)
-    bearer: character:general
-    > Neither side gains ground.
-    * Continue fighting: card:_war_battle@3
-    * Negotiate peace: -flag:war, counter:treasury -20
+	bearer: character:general
+	> Neither side gains ground.
+	* Continue fighting: card:_war_battle@3
+	* Negotiate peace: -flag:war, counter:treasury -20
