@@ -509,84 +509,97 @@ class Parser:
 
     def _parse_single_command(self, part: str, line: Line) -> Optional[Command]:
         """
-        Parse a single command. Supported formats:
-        - 'card:next-event'           : queue a card
-        - 'card:next-event@5'         : queue a card after 5 turns
-        - '[card:_a, card:_b]'        : conditional branch (first matching card)
-        - '+flag:winter'              : add flag
-        - '-flag:winter'              : remove flag
-        - 'counter:hazine 20'         : add 20 to counter
-        - 'counter:hazine -10'        : subtract 10 from counter
-        - 'counter:hazine 10?30'      : add random 10-30 to counter
-        - 'counter:hazine -20?-1'     : subtract random 1-20 from counter
-        - 'counter:hazine -5?10'      : add random between -5 and +10
+        Parse a single command. Dispatches to sub-parsers by prefix.
+
+        Supported formats:
+        - '[card:_a, card:_b]'        : conditional branch
+        - 'card:id' / 'card:id@5'    : queue / timed queue
+        - '+flag:id' / '-flag:id'    : set / clear flag
+        - 'counter:id 20'            : modify counter (fixed or range)
+        - 'trigger:type "value"'     : trigger effect
         """
         part = part.strip()
-        loc = self._make_loc(line)
+        part_lower = part.lower()
 
-        # Branch syntax: [card:_a, card:_b, card:_c]
-        if part.startswith('[') and part.endswith(']'):
-            inner = part[1:-1].strip()
-            card_ids = []
-            for ref in inner.split(','):
-                ref = ref.strip()
-                if ref.lower().startswith('card:'):
-                    card_ids.append(ref[5:])  # Strip 'card:' prefix
-                elif ref:
-                    card_ids.append(ref)  # Allow without prefix too
-            if card_ids:
-                return CardBranch(card_ids=tuple(card_ids), loc=loc)
-
-        # Card commands: 'card:id' (queue) or 'card:id@19' (timed)
-        if part.lower().startswith('card:'):
-            rest = part[5:].strip()
-            # Check for timed syntax: card:id@N
-            if '@' in rest:
-                at_pos = rest.index('@')
-                card_id = rest[:at_pos].strip()
-                delay_str = rest[at_pos + 1:].strip()
-                delay = self._parse_unsigned_int(delay_str)
-                if delay is not None:
-                    return CardTimed(card_id=card_id, delay=delay, loc=loc)
-            else:
-                # Immediate queue
-                return CardQueue(card_id=rest, loc=loc)
-
-        # Flag add: '+flag:winter'
-        if part.lower().startswith('+flag:'):
-            flag_id = part[6:].strip()
-            return FlagSet(flag_id=flag_id, loc=loc)
-
-        # Flag remove: '-flag:winter'
-        if part.lower().startswith('-flag:'):
-            flag_id = part[6:].strip()
-            return FlagClear(flag_id=flag_id, loc=loc)
-
-        # Counter modify: 'counter:hazine 20' or 'counter:hazine -10?30'
-        # Value includes the sign (positive or negative)
-        if part.lower().startswith('counter:'):
-            rest = part[8:]  # After 'counter:'
-            if ' ' in rest:
-                tokens = rest.split(None, 1)
-                if len(tokens) == 2:
-                    counter_id = tokens[0]
-                    value = self._parse_value_or_range(tokens[1], line)
-                    if value:
-                        return CounterMod(counter_id=counter_id, value=value, loc=loc)
-
-        # Trigger commands: 'trigger:response "text"' or 'trigger:sound "file.wav"'
-        if part.lower().startswith('trigger:'):
-            rest = part[8:]  # After 'trigger:'
-            # Find trigger type (response, sound) and value (quoted string)
-            if ' ' in rest:
-                space_pos = rest.index(' ')
-                trigger_type = rest[:space_pos].strip()
-                value_str = rest[space_pos + 1:].strip()
-                # Strip quotes from value
-                value = self._strip_quotes(value_str)
-                return Trigger(trigger_type=trigger_type, value=value, loc=loc)
+        if part.startswith('['):
+            return self._parse_branch_cmd(part, line)
+        if part_lower.startswith('card:'):
+            return self._parse_card_cmd(part[5:], line)
+        if part_lower.startswith('+flag:'):
+            return FlagSet(flag_id=part[6:].strip(), loc=self._make_loc(line))
+        if part_lower.startswith('-flag:'):
+            return FlagClear(flag_id=part[6:].strip(), loc=self._make_loc(line))
+        if part_lower.startswith('counter:'):
+            return self._parse_counter_cmd(part[8:], line)
+        if part_lower.startswith('trigger:'):
+            return self._parse_trigger_cmd(part[8:], line)
 
         return None
+
+    def _parse_branch_cmd(self, part: str, line: Line) -> Optional[CardBranch]:
+        """Parse branch command.
+
+        '[card:_a, card:_b]' -> CardBranch(card_ids=('_a', '_b'))
+        """
+        if not part.endswith(']'):
+            return None
+        inner = part[1:-1].strip()
+        card_ids = []
+        for ref in inner.split(','):
+            ref = ref.strip()
+            if ref.lower().startswith('card:'):
+                card_ids.append(ref[5:])
+            elif ref:
+                card_ids.append(ref)
+        if card_ids:
+            return CardBranch(card_ids=tuple(card_ids), loc=self._make_loc(line))
+        return None
+
+    def _parse_card_cmd(self, rest: str, line: Line) -> Command:
+        """Parse card command. rest = everything after 'card:'.
+
+        'next'   -> CardQueue(card_id='next')
+        'event@5' -> CardTimed(card_id='event', delay=5)
+        """
+        rest = rest.strip()
+        loc = self._make_loc(line)
+        if '@' in rest:
+            at_pos = rest.index('@')
+            card_id = rest[:at_pos].strip()
+            delay = self._parse_unsigned_int(rest[at_pos + 1:])
+            if delay is not None:
+                return CardTimed(card_id=card_id, delay=delay, loc=loc)
+        return CardQueue(card_id=rest, loc=loc)
+
+    def _parse_counter_cmd(self, rest: str, line: Line) -> Optional[CounterMod]:
+        """Parse counter modification. rest = everything after 'counter:'.
+
+        'treasury 20'    -> CounterMod('treasury', FixedValue(20))
+        'army -10?-5'    -> CounterMod('army', RangeValue(-10, -5))
+        """
+        if ' ' not in rest:
+            return None
+        tokens = rest.split(None, 1)
+        if len(tokens) != 2:
+            return None
+        counter_id = tokens[0]
+        value = self._parse_value_or_range(tokens[1], line)
+        if not value:
+            return None
+        return CounterMod(counter_id=counter_id, value=value, loc=self._make_loc(line))
+
+    def _parse_trigger_cmd(self, rest: str, line: Line) -> Optional[Trigger]:
+        """Parse trigger command. rest = everything after 'trigger:'.
+
+        'response "Well done!"' -> Trigger('response', 'Well done!')
+        'sound "coin.wav"'      -> Trigger('sound', 'coin.wav')
+        """
+        if ' ' not in rest:
+            return None
+        space_pos = rest.index(' ')
+        trigger_type = rest[:space_pos].strip()
+        value = self._strip_quotes(rest[space_pos + 1:].strip())
+        return Trigger(trigger_type=trigger_type, value=value, loc=self._make_loc(line))
 
     def _parse_value_or_range(self, s: str, line: Line) -> Optional[ValueOrRange]:
         """
