@@ -102,7 +102,7 @@ class Lexer:
         if has_tab and has_space:
             from .errors import ParseError, SourceLocation
             raise ParseError(
-                "Karışık indent: Aynı satırda hem TAB hem space kullanılamaz",
+                "Mixed indentation: cannot use both TAB and space on the same line",
                 SourceLocation(self.filename, line_number)
             )
 
@@ -115,7 +115,7 @@ class Lexer:
             expected = "TAB" if self.indent_char == '\t' else "space"
             found = "TAB" if first_char == '\t' else "space"
             raise ParseError(
-                f"Tutarsız indent: Dosyada {expected} kullanılıyor, bu satırda {found} var",
+                f"Inconsistent indentation: file uses {expected}, but this line uses {found}",
                 SourceLocation(self.filename, line_number)
             )
 
@@ -153,7 +153,7 @@ class Lexer:
         if stripped.startswith('>'):
             if indent == 0:
                 from .errors import ParseError, SourceLocation
-                raise ParseError("Icerik satiri bir TAB iceride olmali ('>')", SourceLocation(self.filename, line_number))
+                raise ParseError("Content line must be indented ('>')", SourceLocation(self.filename, line_number))
             text = stripped[1:].strip()
             return Line(
                 LineType.PRIMARY_VALUE, raw, line_number, indent,
@@ -165,7 +165,7 @@ class Lexer:
         if match:
             if indent == 0:
                 from .errors import ParseError, SourceLocation
-                raise ParseError("Secenek satiri bir TAB iceride olmali ('*')", SourceLocation(self.filename, line_number))
+                raise ParseError("Choice line must be indented ('*')", SourceLocation(self.filename, line_number))
             return Line(
                 LineType.CHOICE, raw, line_number, indent,
                 choice_label="",
@@ -177,7 +177,7 @@ class Lexer:
         if match:
             if indent == 0:
                 from .errors import ParseError, SourceLocation
-                raise ParseError("Secenek satiri bir TAB iceride olmali ('*')", SourceLocation(self.filename, line_number))
+                raise ParseError("Choice line must be indented ('*')", SourceLocation(self.filename, line_number))
             return Line(
                 LineType.CHOICE, raw, line_number, indent,
                 choice_label=match.group(1).strip(),
@@ -189,7 +189,7 @@ class Lexer:
         if match:
             if indent == 0:
                 from .errors import ParseError, SourceLocation
-                raise ParseError("Secenek satiri bir TAB iceride olmali ('*')", SourceLocation(self.filename, line_number))
+                raise ParseError("Choice line must be indented ('*')", SourceLocation(self.filename, line_number))
             return Line(
                 LineType.CHOICE, raw, line_number, indent,
                 choice_label=match.group(1).strip(),
@@ -224,7 +224,7 @@ class Lexer:
         if match:
             if indent == 0:
                 from .errors import ParseError, SourceLocation
-                raise ParseError(f"Ozellik satiri bir TAB iceride olmali ('{match.group(1)}')", SourceLocation(self.filename, line_number))
+                raise ParseError(f"Property line must be indented ('{match.group(1)}')", SourceLocation(self.filename, line_number))
             return Line(
                 LineType.PROPERTY, raw, line_number, indent,
                 key=match.group(1),

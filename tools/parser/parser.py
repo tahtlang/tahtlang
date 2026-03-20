@@ -109,7 +109,7 @@ class Parser:
                 self._parse_entity()
                 continue
 
-            raise self._error(f"Beklenmeyen satir: {line.raw.strip()}")
+            raise self._error(f"Unexpected line: {line.raw.strip()}")
 
     def _parse_import(self, line: Line):
         """Parse an import statement."""
@@ -141,7 +141,7 @@ class Parser:
         elif entity_type == "card":
             self._parse_card(entity_name, entity_id, entity_flags, header)
         else:
-            raise self._error(f"Bilinmeyen entity tipi: {entity_type}", header)
+            raise self._error(f"Unknown entity type: {entity_type}", header)
 
     def _make_loc(self, line: Line) -> SourceLocation:
         """Create a SourceLocation from a Line."""
@@ -358,7 +358,7 @@ class Parser:
                             lockturn = int(value)
                         except ValueError:
                             raise self._error(
-                                f"Gecersiz lockturn degeri: '{value}' (tam sayi, 'once' veya 'dispose' olmali)",
+                                f"Invalid lockturn value: '{value}' (must be integer, 'once', or 'dispose')",
                                 line
                             )
 
@@ -469,7 +469,7 @@ class Parser:
             if cmd:
                 commands.append(cmd)
             else:
-                raise self._error(f"Bilinmeyen komut: '{part}'", line)
+                raise self._error(f"Unknown command: '{part}'", line)
 
         return commands
 
@@ -676,13 +676,13 @@ class Parser:
                 condition = self._parse_single_condition(condition_str, line)
                 return Weight(value=weight_value, condition=condition, loc=loc)
             except ValueError:
-                raise self._error(f"Gecersiz weight degeri: '{weight_str}'", line)
+                raise self._error(f"Invalid weight value: '{weight_str}'", line)
         else:
             # No condition, just a number
             try:
                 return Weight(value=float(value), condition=None, loc=loc)
             except ValueError:
-                raise self._error(f"Gecersiz weight degeri: '{value}'", line)
+                raise self._error(f"Invalid weight value: '{value}'", line)
 
     def _parse_flag_list(self, value: str) -> list[str]:
         """

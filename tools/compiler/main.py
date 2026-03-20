@@ -160,21 +160,21 @@ def game_to_dict(game: Game) -> dict:
 
 def main():
     arg_parser = argparse.ArgumentParser(
-        description="TahtLang Compiler - .tahta dosyalarini JSON'a derler"
+        description="TahtLang Compiler - compiles .tahta files to JSON"
     )
-    arg_parser.add_argument("input", help="Girdi .tahta dosyasi")
-    arg_parser.add_argument("-o", "--output", help="Cikti JSON dosyasi")
+    arg_parser.add_argument("input", help="Input .tahta file")
+    arg_parser.add_argument("-o", "--output", help="Output JSON file")
     arg_parser.add_argument(
         "--validate", action="store_true",
-        help="Sadece dogrula, cikti uretme"
+        help="Validate only, no output"
     )
     arg_parser.add_argument(
         "--pretty", action="store_true",
-        help="Guzel formatlama JSON (varsayilan)"
+        help="Pretty-print JSON (default)"
     )
     arg_parser.add_argument(
         "--compact", action="store_true",
-        help="Kompakt JSON"
+        help="Compact JSON"
     )
 
     args = arg_parser.parse_args()
@@ -183,32 +183,32 @@ def main():
     try:
         game, import_result = resolve_imports(args.input)
         if not import_result.is_valid:
-            print("Import hatalari:", file=sys.stderr)
+            print("Import errors:", file=sys.stderr)
             for err in import_result.errors:
                 print(f"  {err}", file=sys.stderr)
             sys.exit(1)
         result = validate_game_semantics(game)
 
     except ParseError as e:
-        print(f"Parse hatasi: {e}", file=sys.stderr)
+        print(f"Parse error: {e}", file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError as e:
-        print(f"Dosya bulunamadi: {e}", file=sys.stderr)
+        print(f"File not found: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Validate
     if not result.is_valid:
-        print("Dogrulama hatalari:", file=sys.stderr)
+        print("Validation errors:", file=sys.stderr)
         for err in result.errors:
             print(f"  {err}", file=sys.stderr)
         sys.exit(1)
 
     if args.validate:
-        print("OK Dogrulama basarili")
-        print(f"  {len(game.cards)} kart")
-        print(f"  {len(game.characters)} karakter")
-        print(f"  {len(game.counters)} counter")
-        print(f"  {len(game.flags)} flag")
+        print("OK Validation passed")
+        print(f"  {len(game.cards)} cards")
+        print(f"  {len(game.characters)} characters")
+        print(f"  {len(game.counters)} counters")
+        print(f"  {len(game.flags)} flags")
         sys.exit(0)
 
     # Convert to JSON
@@ -220,7 +220,7 @@ def main():
     if args.output:
         with open(args.output, 'w', encoding='utf-8') as f:
             f.write(json_str)
-        print(f"OK {args.output} yazildi")
+        print(f"OK Written to {args.output}")
     else:
         print(json_str)
 

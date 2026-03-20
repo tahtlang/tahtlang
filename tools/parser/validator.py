@@ -85,7 +85,7 @@ class Validator:
         for counter in game.counters:
             if counter.id in counter_ids:
                 self.result.add_error(
-                    f"Duplicate counter ID'si: '{counter.id}'",
+                    f"Duplicate counter ID: '{counter.id}'",
                     counter.loc
                 )
             counter_ids.add(counter.id)
@@ -94,7 +94,7 @@ class Validator:
         for flag in game.flags:
             if flag.id in flag_ids:
                 self.result.add_error(
-                    f"Duplicate flag ID'si: '{flag.id}'",
+                    f"Duplicate flag ID: '{flag.id}'",
                     flag.loc
                 )
             flag_ids.add(flag.id)
@@ -103,7 +103,7 @@ class Validator:
         for variant in game.variants:
             if variant.id in variant_ids:
                 self.result.add_error(
-                    f"Duplicate variant ID'si: '{variant.id}'",
+                    f"Duplicate variant ID: '{variant.id}'",
                     variant.loc
                 )
             variant_ids.add(variant.id)
@@ -112,7 +112,7 @@ class Validator:
         for character in game.characters:
             if character.id in character_ids:
                 self.result.add_error(
-                    f"Duplicate character ID'si: '{character.id}'",
+                    f"Duplicate character ID: '{character.id}'",
                     character.loc
                 )
             character_ids.add(character.id)
@@ -121,7 +121,7 @@ class Validator:
         for card in game.cards:
             if card.id in card_ids:
                 self.result.add_error(
-                    f"Duplicate kart ID'si: '{card.id}'",
+                    f"Duplicate card ID: '{card.id}'",
                     card.loc
                 )
             card_ids.add(card.id)
@@ -142,7 +142,7 @@ class Validator:
             for flag in game.settings.starting_flags:
                 if flag not in flag_ids:
                     self.result.add_error(
-                        f"Tanimsiz flag: '{flag}' (starting_flags icinde)",
+                        f"Undefined flag: '{flag}' (in starting_flags)",
                         game.settings.loc
                     )
 
@@ -151,7 +151,7 @@ class Validator:
             if flag.bind:
                 if flag.bind not in character_ids:
                     self.result.add_error(
-                        f"Tanimsiz karakter: '{flag.bind}' (flag: {flag.id}, bind)",
+                        f"Undefined character: '{flag.bind}' (flag: {flag.id}, bind)",
                         flag.loc
                     )
 
@@ -187,7 +187,7 @@ class Validator:
                     ref_id = ref[8:]  # Strip 'counter:' prefix
                     if ref_id not in counter_ids:
                         self.result.add_error(
-                            f"Tanimsiz counter: '{ref_id}' (counter: {counter.id}, source)",
+                            f"Undefined counter: '{ref_id}' (counter: {counter.id}, source)",
                             counter.loc
                         )
                 else:
@@ -203,7 +203,7 @@ class Validator:
                     ref_id = ref[10:]  # Strip 'character:' prefix
                     if ref_id not in character_ids:
                         self.result.add_error(
-                            f"Tanimsiz karakter: '{ref_id}' (counter: {counter.id}, source)",
+                            f"Undefined character: '{ref_id}' (counter: {counter.id}, source)",
                             counter.loc
                         )
                 else:
@@ -227,7 +227,7 @@ class Validator:
             # Ring cards must have ID starting with '_'
             if not card.id.startswith('_'):
                 self.result.add_error(
-                    f"Ring kart ID'si '_' ile baslamali: '{card.id}' -> '_{card.id}'",
+                    f"Ring card ID must start with '_': '{card.id}' -> '_{card.id}'",
                     card.loc
                 )
             # Ring cards CAN have weight, lockturn, and require
@@ -239,7 +239,7 @@ class Validator:
             # Non-ring cards with '_' prefix should have ring modifier
             if card.id.startswith('_'):
                 self.result.add_error(
-                    f"'_' ile baslayan kart ID'si ring modifier gerektirir: '{card.id}'",
+                    f"Card ID starting with '_' requires ring modifier: '{card.id}'",
                     card.loc
                 )
 
@@ -247,14 +247,14 @@ class Validator:
         if card.bearer:
             if card.bearer.character_id not in character_ids:
                 self.result.add_error(
-                    f"Tanimsiz bearer: '{card.bearer.character_id}' (kart: {card.id})",
+                    f"Undefined bearer: '{card.bearer.character_id}' (card: {card.id})",
                     card.bearer.loc or card.loc
                 )
 
             # Validate variant reference
             if card.bearer.variant_id and card.bearer.variant_id not in variant_ids:
                 self.result.add_error(
-                    f"Tanimsiz variant: '{card.bearer.variant_id}' (kart: {card.id})",
+                    f"Undefined variant: '{card.bearer.variant_id}' (card: {card.id})",
                     card.bearer.loc or card.loc
                 )
 
@@ -313,33 +313,33 @@ class Validator:
         card_ids: set[str]
     ):
         """Validate a single command."""
-        context = f"kart: {card_id}, secenek: '{choice_label}'"
+        context = f"card: {card_id}, choice: '{choice_label}'"
 
         if isinstance(cmd, CounterMod):
             if cmd.counter_id not in counter_ids:
                 self.result.add_error(
-                    f"Tanimsiz counter: '{cmd.counter_id}' ({context})",
+                    f"Undefined counter: '{cmd.counter_id}' ({context})",
                     cmd.loc
                 )
 
         elif isinstance(cmd, FlagSet):
             if cmd.flag_id not in flag_ids:
                 self.result.add_error(
-                    f"Tanimsiz flag: '{cmd.flag_id}' ({context})",
+                    f"Undefined flag: '{cmd.flag_id}' ({context})",
                     cmd.loc
                 )
 
         elif isinstance(cmd, FlagClear):
             if cmd.flag_id not in flag_ids:
                 self.result.add_error(
-                    f"Tanimsiz flag: '{cmd.flag_id}' ({context})",
+                    f"Undefined flag: '{cmd.flag_id}' ({context})",
                     cmd.loc
                 )
 
         elif isinstance(cmd, CardQueue):
             if cmd.card_id not in card_ids:
                 self.result.add_error(
-                    f"Tanimsiz kart: '{cmd.card_id}' ({context})",
+                    f"Undefined card: '{cmd.card_id}' ({context})",
                     cmd.loc
                 )
 
@@ -347,14 +347,14 @@ class Validator:
             for branch_card_id in cmd.card_ids:
                 if branch_card_id not in card_ids:
                     self.result.add_error(
-                        f"Tanimsiz kart: '{branch_card_id}' ({context}, branch)",
+                        f"Undefined card: '{branch_card_id}' ({context}, branch)",
                         cmd.loc
                     )
 
         elif isinstance(cmd, CardTimed):
             if cmd.card_id not in card_ids:
                 self.result.add_error(
-                    f"Tanimsiz kart: '{cmd.card_id}' ({context})",
+                    f"Undefined card: '{cmd.card_id}' ({context})",
                     cmd.loc
                 )
 
@@ -369,14 +369,14 @@ class Validator:
         if isinstance(condition, FlagCondition):
             if condition.flag_id not in flag_ids:
                 self.result.add_error(
-                    f"Tanimsiz flag: '{condition.flag_id}' (kart: {card_id}, condition)",
+                    f"Undefined flag: '{condition.flag_id}' (card: {card_id}, condition)",
                     condition.loc
                 )
 
         elif isinstance(condition, CounterCondition):
             if condition.counter_id not in counter_ids:
                 self.result.add_error(
-                    f"Tanimsiz counter: '{condition.counter_id}' (kart: {card_id}, condition)",
+                    f"Undefined counter: '{condition.counter_id}' (card: {card_id}, condition)",
                     condition.loc
                 )
 
@@ -394,7 +394,7 @@ class Validator:
             char_id = match.group(1)
             if char_id not in character_ids:
                 self.result.add_error(
-                    f"Tanimsiz karakter metinde: '{{character:{char_id}}}' (kart: {card_id})",
+                    f"Undefined character in text: '{{character:{char_id}}}' (card: {card_id})",
                     loc
                 )
 
@@ -409,7 +409,7 @@ class Validator:
             # Suggest snake_case version
             snake_case = re.sub(r'([a-z])([A-Z])', r'\1_\2', id_str).lower()
             self.result.add_error(
-                f"ID'lerde buyuk harf kullanilamaz, snake_case kullanin: "
+                f"IDs must use snake_case, no uppercase allowed: "
                 f"'{id_str}' -> '{snake_case}' ({entity_type})",
                 loc
             )

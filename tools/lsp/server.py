@@ -142,7 +142,7 @@ class TahtaLanguageServer(LanguageServer):
                 items.append(lsp.CompletionItem(
                     label=char_id,
                     kind=lsp.CompletionItemKind.Class,
-                    detail=f"Karakter: {char.name}"
+                    detail=f"Character: {char.name}"
                 ))
 
         # After "card:" suggest card IDs
@@ -151,7 +151,7 @@ class TahtaLanguageServer(LanguageServer):
                 items.append(lsp.CompletionItem(
                     label=card_id,
                     kind=lsp.CompletionItemKind.Reference,
-                    detail=f"Kart: {card.text[:50]}..." if card.text else "Kart"
+                    detail=f"Card: {card.text[:50]}..." if card.text else "Card"
                 ))
 
         # After "counter:" or "+counter:" or "-counter:" suggest counter IDs
@@ -188,32 +188,32 @@ class TahtaLanguageServer(LanguageServer):
             items.append(lsp.CompletionItem(
                 label="+counter:",
                 kind=lsp.CompletionItemKind.Operator,
-                detail="Counter artir",
+                detail="Increase counter",
                 insert_text="+counter:"
             ))
             items.append(lsp.CompletionItem(
                 label="-counter:",
                 kind=lsp.CompletionItemKind.Operator,
-                detail="Counter azalt",
+                detail="Decrease counter",
                 insert_text="-counter:"
             ))
             # Suggest flag operations
             items.append(lsp.CompletionItem(
                 label="+flag:",
                 kind=lsp.CompletionItemKind.Operator,
-                detail="Flag ekle",
+                detail="Set flag",
                 insert_text="+flag:"
             ))
             items.append(lsp.CompletionItem(
                 label="-flag:",
                 kind=lsp.CompletionItemKind.Operator,
-                detail="Flag kaldir",
+                detail="Clear flag",
                 insert_text="-flag:"
             ))
             items.append(lsp.CompletionItem(
                 label="card:",
                 kind=lsp.CompletionItemKind.Reference,
-                detail="Kart kuyruga ekle",
+                detail="Queue card",
                 insert_text="card:"
             ))
 
@@ -221,46 +221,46 @@ class TahtaLanguageServer(LanguageServer):
         elif position.character == 0 or stripped == "":
             items.extend([
                 lsp.CompletionItem(
-                    label="Kart (card:id)",
+                    label="Card (card:id)",
                     kind=lsp.CompletionItemKind.Snippet,
-                    detail="Yeni kart",
-                    insert_text="${1:Kart Adi} (card:${2:card-id})\n\tbearer: character:${3:character-id}\n\tweight: ${4:10}\n\t> ${5:Kart metni}\n\t* ${6:Evet}: +counter:${7:x} ${8:10}\n\t* ${9:Hayir}: -counter:${10:y} ${11:5}\n"
+                    detail="New card",
+                    insert_text="${1:Card Name} (card:${2:card_id})\n\tbearer: character:${3:character_id}\n\tweight: ${4:10}\n\t> ${5:Card text}\n\t* ${6:Yes}: counter:${7:x} ${8:10}\n\t* ${9:No}: counter:${10:y} ${11:-5}\n"
                 ),
                 lsp.CompletionItem(
-                    label="Karakter (character:id)",
+                    label="Character (character:id)",
                     kind=lsp.CompletionItemKind.Snippet,
-                    detail="Yeni karakter",
-                    insert_text="${1:Karakter Adi} (character:${2:character-id})\n\tprompt: \"${3:gorsel tanim}\"\n"
+                    detail="New character",
+                    insert_text="${1:Character Name} (character:${2:character_id})\n\tprompt: \"${3:visual description}\"\n"
                 ),
                 lsp.CompletionItem(
                     label="Counter (counter:id)",
                     kind=lsp.CompletionItemKind.Snippet,
-                    detail="Yeni counter (killer)",
-                    insert_text="${1:Counter Adi} (counter:${2:counter-id}, killer)\n\tstart: ${3:50}\n\ticon: ${4:coin.png}\n"
+                    detail="New counter (killer)",
+                    insert_text="${1:Counter Name} (counter:${2:counter_id}, killer)\n\tstart: ${3:50}\n\ticon: ${4:coin.png}\n"
                 ),
                 lsp.CompletionItem(
                     label="Flag (flag:id)",
                     kind=lsp.CompletionItemKind.Snippet,
-                    detail="Yeni flag",
-                    insert_text="${1:Flag Adi} (flag:${2:flag-id})\n"
+                    detail="New flag",
+                    insert_text="${1:Flag Name} (flag:${2:flag_id})\n"
                 ),
                 lsp.CompletionItem(
                     label="Variant (variant:id)",
                     kind=lsp.CompletionItemKind.Snippet,
-                    detail="Yeni variant (duygu, durum, poz)",
-                    insert_text="${1:Variant Adi} (variant:${2:variant-id})\n\tprompt: \"${3:gorsel tanim}\"\n"
+                    detail="New variant (emotion, state, pose)",
+                    insert_text="${1:Variant Name} (variant:${2:variant_id})\n\tprompt: \"${3:visual description}\"\n"
                 ),
             ])
 
             # Also suggest property keys inside an entity
             items.extend([
-                lsp.CompletionItem(label="bearer:", kind=lsp.CompletionItemKind.Property, detail="Karti sunan karakter"),
-                lsp.CompletionItem(label="require:", kind=lsp.CompletionItemKind.Property, detail="Kartin havuzda olma kosullari"),
-                lsp.CompletionItem(label="weight:", kind=lsp.CompletionItemKind.Property, detail="Cekilme agirligi"),
-                lsp.CompletionItem(label="lockturn:", kind=lsp.CompletionItemKind.Property, detail="Cooldown (turn sayisi)"),
-                lsp.CompletionItem(label="icon:", kind=lsp.CompletionItemKind.Property, detail="Ikon (emoji veya dosya)"),
-                lsp.CompletionItem(label="prompt:", kind=lsp.CompletionItemKind.Property, detail="AI gorsel tanimi"),
-                lsp.CompletionItem(label="bind:", kind=lsp.CompletionItemKind.Property, detail="Flag ile karakter baglama"),
+                lsp.CompletionItem(label="bearer:", kind=lsp.CompletionItemKind.Property, detail="Card bearer character"),
+                lsp.CompletionItem(label="require:", kind=lsp.CompletionItemKind.Property, detail="Conditions for card to appear in pool"),
+                lsp.CompletionItem(label="weight:", kind=lsp.CompletionItemKind.Property, detail="Draw weight"),
+                lsp.CompletionItem(label="lockturn:", kind=lsp.CompletionItemKind.Property, detail="Cooldown (turn count)"),
+                lsp.CompletionItem(label="icon:", kind=lsp.CompletionItemKind.Property, detail="Icon (emoji or file)"),
+                lsp.CompletionItem(label="prompt:", kind=lsp.CompletionItemKind.Property, detail="AI visual description"),
+                lsp.CompletionItem(label="bind:", kind=lsp.CompletionItemKind.Property, detail="Bind flag to character"),
             ])
 
         return items
@@ -287,7 +287,7 @@ class TahtaLanguageServer(LanguageServer):
         # Check if it's a character
         if word in characters:
             char = characters[word]
-            content = f"## Karakter: {char.name}\n\n"
+            content = f"## Character: {char.name}\n\n"
             if char.prompt:
                 content += f"Prompt: {char.prompt}\n"
             return lsp.Hover(
@@ -301,9 +301,9 @@ class TahtaLanguageServer(LanguageServer):
         if word in counters:
             counter = counters[word]
             content = f"## {counter.icon} {counter.name}\n\n"
-            content += f"Baslangic: {counter.start}"
+            content += f"Start: {counter.start}"
             if counter.killer:
-                content += "\n\n**Killer**: 0 veya 100'de oyun biter"
+                content += "\n\n**Killer**: game over at 0 or 100"
             return lsp.Hover(
                 contents=lsp.MarkupContent(
                     kind=lsp.MarkupKind.Markdown,
@@ -340,7 +340,7 @@ class TahtaLanguageServer(LanguageServer):
         # Check if it's a card
         if word in cards:
             card = cards[word]
-            content = f"## Kart: {word}\n\n"
+            content = f"## Card: {word}\n\n"
             if card.bearer:
                 content += f"Bearer: {card.bearer.character_id}"
                 if card.bearer.variant_id:
