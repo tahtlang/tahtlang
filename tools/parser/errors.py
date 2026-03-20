@@ -10,7 +10,9 @@ from .ast import SourceLocation
 class TahtaError(Exception):
     """Base error class with source location."""
 
-    def __init__(self, message: str, location: Optional[SourceLocation] = None):
+    def __init__(
+        self, message: str, location: Optional[SourceLocation] = None
+    ):
         self.message = message
         self.location = location
         super().__init__(self.format())
@@ -23,9 +25,11 @@ class TahtaError(Exception):
 
 class ParseError(TahtaError):
     """Syntax error during parsing."""
+
     pass
 
 
 class ValidationError(TahtaError):
     """Semantic error during validation (e.g., unknown reference)."""
+
     pass

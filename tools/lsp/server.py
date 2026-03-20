@@ -12,11 +12,10 @@ from typing import Optional
 
 from lsprotocol import types as lsp
 from pygls.lsp.server import LanguageServer
-from pygls.workspace import TextDocument
 
-from tools.parser import Parser, ParseError, validate_game
-from tools.parser.lexer import Lexer, LineType
+from tools.parser import ParseError, Parser, validate_game
 from tools.parser.ast import Game
+from tools.parser.lexer import Lexer, LineType
 
 
 class TahtaLanguageServer(LanguageServer):
@@ -51,15 +50,17 @@ class TahtaLanguageServer(LanguageServer):
         except ParseError as e:
             # Create diagnostic from parse error
             line = e.location.line - 1 if e.location else 0
-            diagnostics.append(lsp.Diagnostic(
-                range=lsp.Range(
-                    start=lsp.Position(line=line, character=0),
-                    end=lsp.Position(line=line, character=100)
-                ),
-                message=e.message,
-                severity=lsp.DiagnosticSeverity.Error,
-                source="tahta"
-            ))
+            diagnostics.append(
+                lsp.Diagnostic(
+                    range=lsp.Range(
+                        start=lsp.Position(line=line, character=0),
+                        end=lsp.Position(line=line, character=100),
+                    ),
+                    message=e.message,
+                    severity=lsp.DiagnosticSeverity.Error,
+                    source="tahta",
+                )
+            )
 
         return diagnostics
 
@@ -75,7 +76,9 @@ class TahtaLanguageServer(LanguageServer):
 
         self.entity_locations[uri] = locations
 
-    def _validate_references(self, uri: str, source: str, game: Game) -> list[lsp.Diagnostic]:
+    def _validate_references(
+        self, uri: str, source: str, game: Game
+    ) -> list[lsp.Diagnostic]:
         """Validate references using the validator module."""
         diagnostics = []
 
@@ -84,19 +87,23 @@ class TahtaLanguageServer(LanguageServer):
             # Get line number from error location
             line = error.location.line - 1 if error.location else 0
 
-            diagnostics.append(lsp.Diagnostic(
-                range=lsp.Range(
-                    start=lsp.Position(line=line, character=0),
-                    end=lsp.Position(line=line, character=100)
-                ),
-                message=error.message,
-                severity=lsp.DiagnosticSeverity.Error,
-                source="tahta"
-            ))
+            diagnostics.append(
+                lsp.Diagnostic(
+                    range=lsp.Range(
+                        start=lsp.Position(line=line, character=0),
+                        end=lsp.Position(line=line, character=100),
+                    ),
+                    message=error.message,
+                    severity=lsp.DiagnosticSeverity.Error,
+                    source="tahta",
+                )
+            )
 
         return diagnostics
 
-    def get_completions_at_position(self, uri: str, position: lsp.Position) -> list[lsp.CompletionItem]:
+    def get_completions_at_position(
+        self, uri: str, position: lsp.Position
+    ) -> list[lsp.CompletionItem]:
         """Get completion items at position."""
         document = self.workspace.get_text_document(uri)
         game = self.get_game(uri)
@@ -110,7 +117,7 @@ class TahtaLanguageServer(LanguageServer):
             return []
 
         # Get text before cursor
-        text_before = line[:position.character]
+        text_before = line[: position.character]
         stripped = text_before.lstrip()
 
         items = []
@@ -123,149 +130,235 @@ class TahtaLanguageServer(LanguageServer):
         cards = {c.id: c for c in game.cards}
 
         # After "character:" suggest character IDs
-        if 'character:' in stripped and not stripped.endswith('character:'):
+        if "character:" in stripped and not stripped.endswith("character:"):
             # Character already typed, check for variant
-            after_char = stripped.split('character:')[-1].strip()
-            if '(' in after_char or 'variant:' in after_char:
+            after_char = stripped.split("character:")[-1].strip()
+            if "(" in after_char or "variant:" in after_char:
                 # Inside parentheses or after variant:, suggest variants
                 for variant_id, variant in variants.items():
-                    items.append(lsp.CompletionItem(
-                        label=f"variant:{variant_id}",
+                    items.append(
+                        lsp.CompletionItem(
+                            label=f"variant:{variant_id}",
+                            kind=lsp.CompletionItemKind.EnumMember,
+                            detail=f"Variant: {variant.name}",
+                            documentation=variant.prompt or None,
+                            insert_text=f"variant:{variant_id}",
+                        )
+                    )
+        elif stripped.endswith("character:"):
+            # Just typed "character:", suggest character IDs
+            for char_id, char in characters.items():
+                items.append(
+                    lsp.CompletionItem(
+                        label=char_id,
+                        kind=lsp.CompletionItemKind.Class,
+                        detail=f"Character: {char.name}",
+                    )
+                )
+
+        # After "card:" suggest card IDs
+        elif stripped.endswith("card:"):
+            for card_id, card in cards.items():
+                items.append(
+                    lsp.CompletionItem(
+                        label=card_id,
+                        kind=lsp.CompletionItemKind.Reference,
+                        detail=f"Card: {card.text[:50]}..."
+                        if card.text
+                        else "Card",
+                    )
+                )
+
+        # After "counter:" or "+counter:" or "-counter:" suggest counter IDs
+        elif (
+            stripped.endswith("counter:")
+            or stripped.endswith("+counter:")
+            or stripped.endswith("-counter:")
+        ):
+            for counter_id, counter in counters.items():
+                items.append(
+                    lsp.CompletionItem(
+                        label=counter_id,
+                        kind=lsp.CompletionItemKind.Variable,
+                        detail=f"{counter.icon} {counter.name}",
+                    )
+                )
+
+        # After "flag:" or "+flag:" or "-flag:" or "!flag:" suggest flag IDs
+        elif (
+            stripped.endswith("flag:")
+            or stripped.endswith("+flag:")
+            or stripped.endswith("-flag:")
+            or stripped.endswith("!flag:")
+        ):
+            for flag_id, flag in flags.items():
+                items.append(
+                    lsp.CompletionItem(
+                        label=flag_id,
+                        kind=lsp.CompletionItemKind.Constant,
+                        detail=f"Flag: {flag.name}",
+                    )
+                )
+
+        # After "variant:" suggest variant IDs
+        elif stripped.endswith("variant:"):
+            for variant_id, variant in variants.items():
+                items.append(
+                    lsp.CompletionItem(
+                        label=variant_id,
                         kind=lsp.CompletionItemKind.EnumMember,
                         detail=f"Variant: {variant.name}",
                         documentation=variant.prompt or None,
-                        insert_text=f"variant:{variant_id}"
-                    ))
-        elif stripped.endswith('character:'):
-            # Just typed "character:", suggest character IDs
-            for char_id, char in characters.items():
-                items.append(lsp.CompletionItem(
-                    label=char_id,
-                    kind=lsp.CompletionItemKind.Class,
-                    detail=f"Character: {char.name}"
-                ))
-
-        # After "card:" suggest card IDs
-        elif stripped.endswith('card:'):
-            for card_id, card in cards.items():
-                items.append(lsp.CompletionItem(
-                    label=card_id,
-                    kind=lsp.CompletionItemKind.Reference,
-                    detail=f"Card: {card.text[:50]}..." if card.text else "Card"
-                ))
-
-        # After "counter:" or "+counter:" or "-counter:" suggest counter IDs
-        elif stripped.endswith('counter:') or stripped.endswith('+counter:') or stripped.endswith('-counter:'):
-            for counter_id, counter in counters.items():
-                items.append(lsp.CompletionItem(
-                    label=counter_id,
-                    kind=lsp.CompletionItemKind.Variable,
-                    detail=f"{counter.icon} {counter.name}"
-                ))
-
-        # After "flag:" or "+flag:" or "-flag:" or "!flag:" suggest flag IDs
-        elif stripped.endswith('flag:') or stripped.endswith('+flag:') or stripped.endswith('-flag:') or stripped.endswith('!flag:'):
-            for flag_id, flag in flags.items():
-                items.append(lsp.CompletionItem(
-                    label=flag_id,
-                    kind=lsp.CompletionItemKind.Constant,
-                    detail=f"Flag: {flag.name}"
-                ))
-
-        # After "variant:" suggest variant IDs
-        elif stripped.endswith('variant:'):
-            for variant_id, variant in variants.items():
-                items.append(lsp.CompletionItem(
-                    label=variant_id,
-                    kind=lsp.CompletionItemKind.EnumMember,
-                    detail=f"Variant: {variant.name}",
-                    documentation=variant.prompt or None
-                ))
+                    )
+                )
 
         # In choice line, after colon suggest command prefixes
         elif stripped.startswith("*") and ":" in stripped:
             # Suggest counter operations
-            items.append(lsp.CompletionItem(
-                label="+counter:",
-                kind=lsp.CompletionItemKind.Operator,
-                detail="Increase counter",
-                insert_text="+counter:"
-            ))
-            items.append(lsp.CompletionItem(
-                label="-counter:",
-                kind=lsp.CompletionItemKind.Operator,
-                detail="Decrease counter",
-                insert_text="-counter:"
-            ))
+            items.append(
+                lsp.CompletionItem(
+                    label="+counter:",
+                    kind=lsp.CompletionItemKind.Operator,
+                    detail="Increase counter",
+                    insert_text="+counter:",
+                )
+            )
+            items.append(
+                lsp.CompletionItem(
+                    label="-counter:",
+                    kind=lsp.CompletionItemKind.Operator,
+                    detail="Decrease counter",
+                    insert_text="-counter:",
+                )
+            )
             # Suggest flag operations
-            items.append(lsp.CompletionItem(
-                label="+flag:",
-                kind=lsp.CompletionItemKind.Operator,
-                detail="Set flag",
-                insert_text="+flag:"
-            ))
-            items.append(lsp.CompletionItem(
-                label="-flag:",
-                kind=lsp.CompletionItemKind.Operator,
-                detail="Clear flag",
-                insert_text="-flag:"
-            ))
-            items.append(lsp.CompletionItem(
-                label="card:",
-                kind=lsp.CompletionItemKind.Reference,
-                detail="Queue card",
-                insert_text="card:"
-            ))
+            items.append(
+                lsp.CompletionItem(
+                    label="+flag:",
+                    kind=lsp.CompletionItemKind.Operator,
+                    detail="Set flag",
+                    insert_text="+flag:",
+                )
+            )
+            items.append(
+                lsp.CompletionItem(
+                    label="-flag:",
+                    kind=lsp.CompletionItemKind.Operator,
+                    detail="Clear flag",
+                    insert_text="-flag:",
+                )
+            )
+            items.append(
+                lsp.CompletionItem(
+                    label="card:",
+                    kind=lsp.CompletionItemKind.Reference,
+                    detail="Queue card",
+                    insert_text="card:",
+                )
+            )
 
         # At line start, suggest entity headers
         elif position.character == 0 or stripped == "":
-            items.extend([
-                lsp.CompletionItem(
-                    label="Card (card:id)",
-                    kind=lsp.CompletionItemKind.Snippet,
-                    detail="New card",
-                    insert_text="${1:Card Name} (card:${2:card_id})\n\tbearer: character:${3:character_id}\n\tweight: ${4:10}\n\t> ${5:Card text}\n\t* ${6:Yes}: counter:${7:x} ${8:10}\n\t* ${9:No}: counter:${10:y} ${11:-5}\n"
-                ),
-                lsp.CompletionItem(
-                    label="Character (character:id)",
-                    kind=lsp.CompletionItemKind.Snippet,
-                    detail="New character",
-                    insert_text="${1:Character Name} (character:${2:character_id})\n\tprompt: \"${3:visual description}\"\n"
-                ),
-                lsp.CompletionItem(
-                    label="Counter (counter:id)",
-                    kind=lsp.CompletionItemKind.Snippet,
-                    detail="New counter (killer)",
-                    insert_text="${1:Counter Name} (counter:${2:counter_id}, killer)\n\tstart: ${3:50}\n\ticon: ${4:coin.png}\n"
-                ),
-                lsp.CompletionItem(
-                    label="Flag (flag:id)",
-                    kind=lsp.CompletionItemKind.Snippet,
-                    detail="New flag",
-                    insert_text="${1:Flag Name} (flag:${2:flag_id})\n"
-                ),
-                lsp.CompletionItem(
-                    label="Variant (variant:id)",
-                    kind=lsp.CompletionItemKind.Snippet,
-                    detail="New variant (emotion, state, pose)",
-                    insert_text="${1:Variant Name} (variant:${2:variant_id})\n\tprompt: \"${3:visual description}\"\n"
-                ),
-            ])
+            items.extend(
+                [
+                    lsp.CompletionItem(
+                        label="Card (card:id)",
+                        kind=lsp.CompletionItemKind.Snippet,
+                        detail="New card",
+                        insert_text=(
+                            "${1:Card Name} (card:${2:card_id})\n"
+                            "\tbearer: character:${3:character_id}\n"
+                            "\tweight: ${4:10}\n"
+                            "\t> ${5:Card text}\n"
+                            "\t* ${6:Yes}: counter:${7:x} ${8:10}\n"
+                            "\t* ${9:No}: counter:${10:y} ${11:-5}\n"
+                        ),
+                    ),
+                    lsp.CompletionItem(
+                        label="Character (character:id)",
+                        kind=lsp.CompletionItemKind.Snippet,
+                        detail="New character",
+                        insert_text=(
+                            "${1:Character Name} "
+                            "(character:${2:character_id})\n"
+                            '\tprompt: "${3:visual description}"\n'
+                        ),
+                    ),
+                    lsp.CompletionItem(
+                        label="Counter (counter:id)",
+                        kind=lsp.CompletionItemKind.Snippet,
+                        detail="New counter (killer)",
+                        insert_text=(
+                            "${1:Counter Name} "
+                            "(counter:${2:counter_id}, killer)\n"
+                            "\tstart: ${3:50}\n"
+                            "\ticon: ${4:coin.png}\n"
+                        ),
+                    ),
+                    lsp.CompletionItem(
+                        label="Flag (flag:id)",
+                        kind=lsp.CompletionItemKind.Snippet,
+                        detail="New flag",
+                        insert_text="${1:Flag Name} (flag:${2:flag_id})\n",
+                    ),
+                    lsp.CompletionItem(
+                        label="Variant (variant:id)",
+                        kind=lsp.CompletionItemKind.Snippet,
+                        detail="New variant (emotion, state, pose)",
+                        insert_text=(
+                            "${1:Variant Name} (variant:${2:variant_id})\n"
+                            '\tprompt: "${3:visual description}"\n'
+                        ),
+                    ),
+                ]
+            )
 
             # Also suggest property keys inside an entity
-            items.extend([
-                lsp.CompletionItem(label="bearer:", kind=lsp.CompletionItemKind.Property, detail="Card bearer character"),
-                lsp.CompletionItem(label="require:", kind=lsp.CompletionItemKind.Property, detail="Conditions for card to appear in pool"),
-                lsp.CompletionItem(label="weight:", kind=lsp.CompletionItemKind.Property, detail="Draw weight"),
-                lsp.CompletionItem(label="lockturn:", kind=lsp.CompletionItemKind.Property, detail="Cooldown (turn count)"),
-                lsp.CompletionItem(label="icon:", kind=lsp.CompletionItemKind.Property, detail="Icon (emoji or file)"),
-                lsp.CompletionItem(label="prompt:", kind=lsp.CompletionItemKind.Property, detail="AI visual description"),
-                lsp.CompletionItem(label="bind:", kind=lsp.CompletionItemKind.Property, detail="Bind flag to character"),
-            ])
+            items.extend(
+                [
+                    lsp.CompletionItem(
+                        label="bearer:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="Card bearer character",
+                    ),
+                    lsp.CompletionItem(
+                        label="require:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="Conditions for card to appear in pool",
+                    ),
+                    lsp.CompletionItem(
+                        label="weight:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="Draw weight",
+                    ),
+                    lsp.CompletionItem(
+                        label="lockturn:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="Cooldown (turn count)",
+                    ),
+                    lsp.CompletionItem(
+                        label="icon:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="Icon (emoji or file)",
+                    ),
+                    lsp.CompletionItem(
+                        label="prompt:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="AI visual description",
+                    ),
+                    lsp.CompletionItem(
+                        label="bind:",
+                        kind=lsp.CompletionItemKind.Property,
+                        detail="Bind flag to character",
+                    ),
+                ]
+            )
 
         return items
 
-    def get_hover_info(self, uri: str, position: lsp.Position) -> Optional[lsp.Hover]:
+    def get_hover_info(
+        self, uri: str, position: lsp.Position
+    ) -> Optional[lsp.Hover]:
         """Get hover information at position."""
         document = self.workspace.get_text_document(uri)
         game = self.get_game(uri)
@@ -292,8 +385,7 @@ class TahtaLanguageServer(LanguageServer):
                 content += f"Prompt: {char.prompt}\n"
             return lsp.Hover(
                 contents=lsp.MarkupContent(
-                    kind=lsp.MarkupKind.Markdown,
-                    value=content
+                    kind=lsp.MarkupKind.Markdown, value=content
                 )
             )
 
@@ -306,8 +398,7 @@ class TahtaLanguageServer(LanguageServer):
                 content += "\n\n**Killer**: game over at 0 or 100"
             return lsp.Hover(
                 contents=lsp.MarkupContent(
-                    kind=lsp.MarkupKind.Markdown,
-                    value=content
+                    kind=lsp.MarkupKind.Markdown, value=content
                 )
             )
 
@@ -319,8 +410,7 @@ class TahtaLanguageServer(LanguageServer):
                 content += f"Prompt: {variant.prompt}"
             return lsp.Hover(
                 contents=lsp.MarkupContent(
-                    kind=lsp.MarkupKind.Markdown,
-                    value=content
+                    kind=lsp.MarkupKind.Markdown, value=content
                 )
             )
 
@@ -332,8 +422,7 @@ class TahtaLanguageServer(LanguageServer):
                 content += f"\n\nBind: {flag.bind}"
             return lsp.Hover(
                 contents=lsp.MarkupContent(
-                    kind=lsp.MarkupKind.Markdown,
-                    value=content
+                    kind=lsp.MarkupKind.Markdown, value=content
                 )
             )
 
@@ -350,14 +439,15 @@ class TahtaLanguageServer(LanguageServer):
                 content += f"> {card.text[:100]}..."
             return lsp.Hover(
                 contents=lsp.MarkupContent(
-                    kind=lsp.MarkupKind.Markdown,
-                    value=content
+                    kind=lsp.MarkupKind.Markdown, value=content
                 )
             )
 
         return None
 
-    def get_definition(self, uri: str, position: lsp.Position) -> Optional[lsp.Location]:
+    def get_definition(
+        self, uri: str, position: lsp.Position
+    ) -> Optional[lsp.Location]:
         """Get definition location for symbol at position."""
         document = self.workspace.get_text_document(uri)
         word = document.word_at_position(position)
@@ -372,8 +462,8 @@ class TahtaLanguageServer(LanguageServer):
                 uri=uri,
                 range=lsp.Range(
                     start=lsp.Position(line=line, character=col),
-                    end=lsp.Position(line=line, character=col + len(word))
-                )
+                    end=lsp.Position(line=line, character=col + len(word)),
+                ),
             )
 
         return None
@@ -386,6 +476,7 @@ server = TahtaLanguageServer()
 # ============================================================================
 # LSP Feature Handlers
 # ============================================================================
+
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
 def did_open(ls: TahtaLanguageServer, params: lsp.DidOpenTextDocumentParams):
@@ -400,7 +491,9 @@ def did_open(ls: TahtaLanguageServer, params: lsp.DidOpenTextDocumentParams):
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DID_CHANGE)
-def did_change(ls: TahtaLanguageServer, params: lsp.DidChangeTextDocumentParams):
+def did_change(
+    ls: TahtaLanguageServer, params: lsp.DidChangeTextDocumentParams
+):
     """Handle document change."""
     uri = params.text_document.uri
     document = ls.workspace.get_text_document(uri)
@@ -436,27 +529,31 @@ def did_close(ls: TahtaLanguageServer, params: lsp.DidCloseTextDocumentParams):
 @server.feature(
     lsp.TEXT_DOCUMENT_COMPLETION,
     lsp.CompletionOptions(
-        trigger_characters=[':', '#', '>', '(', '-'],
-        resolve_provider=False
-    )
+        trigger_characters=[":", "#", ">", "(", "-"], resolve_provider=False
+    ),
 )
-def completions(ls: TahtaLanguageServer, params: lsp.CompletionParams) -> lsp.CompletionList:
+def completions(
+    ls: TahtaLanguageServer, params: lsp.CompletionParams
+) -> lsp.CompletionList:
     """Provide completion items."""
     items = ls.get_completions_at_position(
-        params.text_document.uri,
-        params.position
+        params.text_document.uri, params.position
     )
     return lsp.CompletionList(is_incomplete=False, items=items)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_HOVER)
-def hover(ls: TahtaLanguageServer, params: lsp.HoverParams) -> Optional[lsp.Hover]:
+def hover(
+    ls: TahtaLanguageServer, params: lsp.HoverParams
+) -> Optional[lsp.Hover]:
     """Provide hover information."""
     return ls.get_hover_info(params.text_document.uri, params.position)
 
 
 @server.feature(lsp.TEXT_DOCUMENT_DEFINITION)
-def definition(ls: TahtaLanguageServer, params: lsp.DefinitionParams) -> Optional[lsp.Location]:
+def definition(
+    ls: TahtaLanguageServer, params: lsp.DefinitionParams
+) -> Optional[lsp.Location]:
     """Go to definition."""
     return ls.get_definition(params.text_document.uri, params.position)
 
@@ -464,6 +561,7 @@ def definition(ls: TahtaLanguageServer, params: lsp.DefinitionParams) -> Optiona
 # ============================================================================
 # Entry Point
 # ============================================================================
+
 
 def main():
     """Start the language server."""

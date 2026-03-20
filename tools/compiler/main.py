@@ -12,15 +12,29 @@ import argparse
 import json
 import sys
 
-from tools.parser import Parser, ParseError
-from tools.parser.validator import validate_game as validate_game_semantics, resolve_imports, validate_with_imports
+from tools.parser import ParseError
 from tools.parser.ast import (
-    Game, Card, Counter, Flag, Variant, Character, Settings,
-    Choice, Bearer, Weight,
-    CounterMod, FlagSet, FlagClear, CardQueue, CardBranch, CardTimed, Trigger,
-    FlagCondition, CounterCondition,
-    FixedValue, RangeValue,
-    AggregateType, TrackType
+    Bearer,
+    CardBranch,
+    CardQueue,
+    CardTimed,
+    Choice,
+    CounterCondition,
+    CounterMod,
+    FixedValue,
+    FlagClear,
+    FlagCondition,
+    FlagSet,
+    Game,
+    RangeValue,
+    Trigger,
+    Weight,
+)
+from tools.parser.validator import (
+    resolve_imports,
+)
+from tools.parser.validator import (
+    validate_game as validate_game_semantics,
 )
 
 
@@ -31,7 +45,11 @@ def game_to_dict(game: Game) -> dict:
         if isinstance(val, FixedValue):
             return {"type": "fixed", "value": val.value}
         elif isinstance(val, RangeValue):
-            return {"type": "range", "min": val.min_value, "max": val.max_value}
+            return {
+                "type": "range",
+                "min": val.min_value,
+                "max": val.max_value,
+            }
         return None
 
     def command_to_dict(cmd) -> dict:
@@ -39,7 +57,7 @@ def game_to_dict(game: Game) -> dict:
             return {
                 "type": "counter_mod",
                 "counter": cmd.counter_id,
-                "value": value_to_dict(cmd.value)
+                "value": value_to_dict(cmd.value),
             }
         elif isinstance(cmd, FlagSet):
             return {"type": "flag_set", "flag": cmd.flag_id}
@@ -50,27 +68,39 @@ def game_to_dict(game: Game) -> dict:
         elif isinstance(cmd, CardBranch):
             return {"type": "card_branch", "cards": list(cmd.card_ids)}
         elif isinstance(cmd, CardTimed):
-            return {"type": "card_timed", "card": cmd.card_id, "delay": cmd.delay}
+            return {
+                "type": "card_timed",
+                "card": cmd.card_id,
+                "delay": cmd.delay,
+            }
         elif isinstance(cmd, Trigger):
-            return {"type": "trigger", "trigger_type": cmd.trigger_type, "value": cmd.value}
+            return {
+                "type": "trigger",
+                "trigger_type": cmd.trigger_type,
+                "value": cmd.value,
+            }
         return {}
 
     def condition_to_dict(cond) -> dict:
         if isinstance(cond, FlagCondition):
-            return {"type": "flag", "flag": cond.flag_id, "negated": cond.negated}
+            return {
+                "type": "flag",
+                "flag": cond.flag_id,
+                "negated": cond.negated,
+            }
         elif isinstance(cond, CounterCondition):
             return {
                 "type": "counter",
                 "counter": cond.counter_id,
                 "operator": cond.operator,
-                "value": cond.value
+                "value": cond.value,
             }
         return {}
 
     def choice_to_dict(choice: Choice) -> dict:
         return {
             "label": choice.label,
-            "commands": [command_to_dict(c) for c in choice.commands]
+            "commands": [command_to_dict(c) for c in choice.commands],
         }
 
     def weight_to_dict(w: Weight) -> dict:
@@ -165,16 +195,13 @@ def main():
     arg_parser.add_argument("input", help="Input .tahta file")
     arg_parser.add_argument("-o", "--output", help="Output JSON file")
     arg_parser.add_argument(
-        "--validate", action="store_true",
-        help="Validate only, no output"
+        "--validate", action="store_true", help="Validate only, no output"
     )
     arg_parser.add_argument(
-        "--pretty", action="store_true",
-        help="Pretty-print JSON (default)"
+        "--pretty", action="store_true", help="Pretty-print JSON (default)"
     )
     arg_parser.add_argument(
-        "--compact", action="store_true",
-        help="Compact JSON"
+        "--compact", action="store_true", help="Compact JSON"
     )
 
     args = arg_parser.parse_args()
@@ -218,7 +245,7 @@ def main():
 
     # Output
     if args.output:
-        with open(args.output, 'w', encoding='utf-8') as f:
+        with open(args.output, "w", encoding="utf-8") as f:
             f.write(json_str)
         print(f"OK Written to {args.output}")
     else:

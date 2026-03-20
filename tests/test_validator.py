@@ -1,9 +1,7 @@
 """Tests for the semantic validator."""
 
-import pytest
 
-from tools.parser import Parser, validate_game, ValidationResult
-from tools.parser.ast import Game
+from tools.parser import Parser, ValidationResult, validate_game
 
 
 def validate(source: str) -> ValidationResult:
@@ -204,31 +202,19 @@ class TestUndefinedReferences:
         assert_errors(source, "Undefined card")
 
     def test_undefined_flag_in_require(self):
-        source = (
-            "C (card:c)\n"
-            "\trequire: flag:nonexistent\n"
-        )
+        source = "C (card:c)\n\trequire: flag:nonexistent\n"
         assert_errors(source, "Undefined flag")
 
     def test_undefined_counter_in_require(self):
-        source = (
-            "C (card:c)\n"
-            "\trequire: counter:nonexistent > 50\n"
-        )
+        source = "C (card:c)\n\trequire: counter:nonexistent > 50\n"
         assert_errors(source, "Undefined counter")
 
     def test_undefined_flag_in_weight_condition(self):
-        source = (
-            "C (card:c)\n"
-            "\tweight: 0 when flag:nonexistent\n"
-        )
+        source = "C (card:c)\n\tweight: 0 when flag:nonexistent\n"
         assert_errors(source, "Undefined flag")
 
     def test_undefined_counter_in_weight_condition(self):
-        source = (
-            "C (card:c)\n"
-            "\tweight: 2.0 when counter:nonexistent < 30\n"
-        )
+        source = "C (card:c)\n\tweight: 2.0 when counter:nonexistent < 30\n"
         assert_errors(source, "Undefined counter")
 
     def test_undefined_starting_flag(self):
@@ -302,9 +288,7 @@ class TestVirtualCounterValidation:
 
     def test_aggregate_with_invalid_source(self):
         source = (
-            "X (counter:x)\n"
-            "\tsource: [character:a]\n"
-            "\taggregate: average\n"
+            "X (counter:x)\n\tsource: [character:a]\n\taggregate: average\n"
         )
         assert_errors(source, "Aggregate counter source must be counter refs")
 
@@ -317,18 +301,12 @@ class TestVirtualCounterValidation:
         assert_errors(source, "Undefined counter")
 
     def test_tracking_with_invalid_source(self):
-        source = (
-            "X (counter:x)\n"
-            "\tsource: [counter:a]\n"
-            "\ttrack: yes\n"
-        )
+        source = "X (counter:x)\n\tsource: [counter:a]\n\ttrack: yes\n"
         assert_errors(source, "Tracking counter source must be character refs")
 
     def test_tracking_with_undefined_character(self):
         source = (
-            "X (counter:x)\n"
-            "\tsource: [character:nonexistent]\n"
-            "\ttrack: no\n"
+            "X (counter:x)\n\tsource: [character:nonexistent]\n\ttrack: no\n"
         )
         assert_errors(source, "Undefined character")
 
@@ -341,7 +319,11 @@ class TestVirtualCounterValidation:
             "\taggregate: sum\n"
         )
         result = validate(source)
-        agg_errors = [e for e in result.errors if "aggregate" in str(e).lower() or "source" in str(e).lower()]
+        agg_errors = [
+            e
+            for e in result.errors
+            if "aggregate" in str(e).lower() or "source" in str(e).lower()
+        ]
         assert len(agg_errors) == 0
 
     def test_valid_tracking_counter(self):
@@ -352,7 +334,11 @@ class TestVirtualCounterValidation:
             "\ttrack: yes\n"
         )
         result = validate(source)
-        track_errors = [e for e in result.errors if "track" in str(e).lower() or "source" in str(e).lower()]
+        track_errors = [
+            e
+            for e in result.errors
+            if "track" in str(e).lower() or "source" in str(e).lower()
+        ]
         assert len(track_errors) == 0
 
 
@@ -372,9 +358,5 @@ class TestTextInterpolation:
         assert_valid(source)
 
     def test_undefined_character_in_text(self):
-        source = (
-            "C (card:c)\n"
-            "\t> Hello {character:nobody}!\n"
-            "\t* Ok:\n"
-        )
+        source = "C (card:c)\n\t> Hello {character:nobody}!\n\t* Ok:\n"
         assert_errors(source, "Undefined character in text")

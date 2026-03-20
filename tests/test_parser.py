@@ -2,15 +2,24 @@
 
 import pytest
 
-from tools.parser import Parser, ParseError
+from tools.parser import ParseError, Parser
 from tools.parser.ast import (
-    Game, Settings, Counter, Flag, Variant, Character, Card,
-    Choice, Bearer, Weight,
-    CounterMod, FlagSet, FlagClear, CardQueue, CardBranch, CardTimed, Trigger,
-    FixedValue, RangeValue,
-    FlagCondition, CounterCondition,
-    AggregateType, TrackType,
-    LOCKTURN_ONCE, LOCKTURN_DISPOSE,
+    LOCKTURN_DISPOSE,
+    LOCKTURN_ONCE,
+    AggregateType,
+    CardBranch,
+    CardQueue,
+    CardTimed,
+    CounterCondition,
+    CounterMod,
+    FixedValue,
+    FlagClear,
+    FlagCondition,
+    FlagSet,
+    Game,
+    RangeValue,
+    TrackType,
+    Trigger,
 )
 
 
@@ -26,7 +35,9 @@ def parse(source: str) -> Game:
 
 class TestSettings:
     def test_basic_settings(self):
-        game = parse('Game Settings (settings:main)\n\tdescription: "A great game"')
+        game = parse(
+            'Game Settings (settings:main)\n\tdescription: "A great game"'
+        )
         assert game.settings is not None
         assert game.settings.id == "main"
         assert game.settings.name == "Game Settings"
@@ -39,11 +50,17 @@ class TestSettings:
         assert game.settings.starting_flags == ()
 
     def test_settings_starting_flags(self):
-        game = parse("S (settings:main)\n\tstarting_flags: [flag:intro, flag:tutorial]")
+        game = parse(
+            "S (settings:main)\n\tstarting_flags: [flag:intro, flag:tutorial]"
+        )
         assert game.settings.starting_flags == ("intro", "tutorial")
 
     def test_settings_game_over_false(self):
-        game = parse("S (settings:main)\n\tgame_over_on_zero: false\n\tgame_over_on_max: false")
+        game = parse(
+            "S (settings:main)\n"
+            "\tgame_over_on_zero: false\n"
+            "\tgame_over_on_max: false"
+        )
         assert game.settings.game_over_on_zero is False
         assert game.settings.game_over_on_max is False
 
@@ -88,7 +105,9 @@ class TestCounters:
         game = parse('Coin (counter:coin)\n\ticon: coin.png\n\tcolor: "gold"')
         c = game.counters[0]
         assert c.icon == "coin.png"
-        assert c.color == '"gold"'  # color value keeps quotes (not auto-stripped)
+        assert (
+            c.color == '"gold"'
+        )  # color value keeps quotes (not auto-stripped)
 
     def test_virtual_counter_aggregate(self):
         source = (
@@ -109,7 +128,11 @@ class TestCounters:
             ("min", AggregateType.MIN),
             ("max", AggregateType.MAX),
         ]:
-            source = f"X (counter:x)\n\tsource: [counter:a]\n\taggregate: {agg_name}"
+            source = (
+                f"X (counter:x)\n"
+                f"\tsource: [counter:a]\n"
+                f"\taggregate: {agg_name}"
+            )
             game = parse(source)
             assert game.counters[0].aggregate == agg_type
 
@@ -151,7 +174,11 @@ class TestFlags:
         assert game.flags[0].keep is True
 
     def test_flag_bind(self):
-        game = parse("Advisor (character:advisor)\nBound (flag:bound)\n\tbind: character:advisor")
+        game = parse(
+            "Advisor (character:advisor)\n"
+            "Bound (flag:bound)\n"
+            "\tbind: character:advisor"
+        )
         f = game.flags[0]
         assert f.bind == "advisor"
 
@@ -188,7 +215,9 @@ class TestCharacters:
         assert c.name == "The Advisor"
 
     def test_character_with_prompt(self):
-        game = parse('Wizard (character:wizard)\n\tprompt: "old man with staff"')
+        game = parse(
+            'Wizard (character:wizard)\n\tprompt: "old man with staff"'
+        )
         assert game.characters[0].prompt == "old man with staff"
 
 
@@ -242,11 +271,7 @@ class TestCardStructure:
         assert game.cards[0].bearer.variant_id is None
 
     def test_ring_card(self):
-        source = (
-            "Battle (card:_battle, ring)\n"
-            "\t> Fight!\n"
-            "\t* Attack:\n"
-        )
+        source = "Battle (card:_battle, ring)\n\t> Fight!\n\t* Attack:\n"
         game = parse(source)
         card = game.cards[0]
         assert card.ring is True
@@ -393,7 +418,9 @@ class TestChoicesAndCommands:
         assert len(choice.commands) == 1
 
     def test_multiple_choices(self):
-        source = "C (card:c)\n\t* Yes: counter:gold 10\n\t* No: counter:gold -5"
+        source = (
+            "C (card:c)\n\t* Yes: counter:gold 10\n\t* No: counter:gold -5"
+        )
         game = parse(source)
         assert len(game.cards[0].choices) == 2
         assert game.cards[0].choices[0].label == "Yes"
@@ -523,7 +550,9 @@ class TestWeight:
         assert w.condition.value == 30
 
     def test_multiple_weights(self):
-        source = "C (card:c)\n\tweight: 1.0\n\tweight: 3.0 when counter:gold < 20"
+        source = (
+            "C (card:c)\n\tweight: 1.0\n\tweight: 3.0 when counter:gold < 20"
+        )
         game = parse(source)
         weights = game.cards[0].weights
         assert len(weights) == 2
@@ -611,7 +640,7 @@ class TestMultipleEntities:
     def test_full_game(self):
         source = (
             "Game Settings (settings:main)\n"
-            "\tdescription: \"Test\"\n"
+            '\tdescription: "Test"\n'
             "\n"
             "Treasury (counter:treasury, killer)\n"
             "\t> 50\n"

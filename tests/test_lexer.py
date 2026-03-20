@@ -2,18 +2,22 @@
 
 import pytest
 
-from tools.parser.lexer import Lexer, Line, LineType, EntityType, Modifier
 from tools.parser.errors import ParseError
+from tools.parser.lexer import EntityType, Lexer, Line, LineType, Modifier
 
 
 def lex(source: str) -> list[Line]:
     """Helper: lex source and return non-empty, non-comment lines."""
-    return [l for l in Lexer(source, "<test>")]
+    return [ln for ln in Lexer(source, "<test>")]
 
 
 def lex_content(source: str) -> list[Line]:
-    """Helper: lex source and return only content lines (skip empty/comment)."""
-    return [l for l in Lexer(source, "<test>") if l.type not in (LineType.EMPTY, LineType.COMMENT)]
+    """Helper: lex source and return content lines (skip empty/comment)."""
+    return [
+        line
+        for line in Lexer(source, "<test>")
+        if line.type not in (LineType.EMPTY, LineType.COMMENT)
+    ]
 
 
 # =========================================================================
@@ -70,7 +74,7 @@ class TestImports:
 
     def test_indented_import_not_recognized(self):
         """Import must be at column 0."""
-        lines = lex_content("\timport \"file.tahta\"")
+        lines = lex_content('\timport "file.tahta"')
         assert lines[0].type != LineType.IMPORT
 
 

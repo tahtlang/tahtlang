@@ -2,8 +2,8 @@
 
 import json
 
-from tools.parser import Parser
 from tools.compiler.main import game_to_dict
+from tools.parser import Parser
 
 
 def compile_to_dict(source: str) -> dict:
@@ -20,10 +20,10 @@ def compile_to_dict(source: str) -> dict:
 class TestSettingsSerialization:
     def test_settings_fields(self):
         source = (
-            'Game (settings:main)\n'
+            "Game (settings:main)\n"
             '\tdescription: "Test game"\n'
-            '\tstarting_flags: [flag:intro]\n'
-            '\tgame_over_on_zero: false\n'
+            "\tstarting_flags: [flag:intro]\n"
+            "\tgame_over_on_zero: false\n"
         )
         data = compile_to_dict(source)
         s = data["settings"]

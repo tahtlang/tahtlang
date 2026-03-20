@@ -10,18 +10,19 @@ Design decisions:
 - Matches grammar.js structure closely for easy CST->AST conversion
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Union
+from dataclasses import dataclass
 from enum import Enum, auto
-
+from typing import Optional, Union
 
 # =============================================================================
 # Source Location (for error reporting)
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class SourceLocation:
     """Source code location for error reporting."""
+
     file: str
     line: int
     column: int = 0
@@ -38,9 +39,11 @@ class SourceLocation:
 # Conditions (for require: and weight: when clauses)
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class FlagCondition:
     """Flag presence/absence condition: flag:winter or !flag:winter"""
+
     flag_id: str
     negated: bool = False
     loc: Optional[SourceLocation] = None
@@ -49,6 +52,7 @@ class FlagCondition:
 @dataclass(frozen=True)
 class CounterCondition:
     """Counter comparison: counter:hazine < 30 or counter:ordu > 50"""
+
     counter_id: str
     operator: str  # '<', '>', '=', '<=', '>='
     value: int
@@ -62,9 +66,11 @@ Condition = Union[FlagCondition, CounterCondition]
 # Values (fixed or range)
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class FixedValue:
     """A fixed integer value: 20"""
+
     value: int
     loc: Optional[SourceLocation] = None
 
@@ -72,6 +78,7 @@ class FixedValue:
 @dataclass(frozen=True)
 class RangeValue:
     """A random range value: 10?30 (picks random between min and max)"""
+
     min_value: int
     max_value: int
     loc: Optional[SourceLocation] = None
@@ -84,6 +91,7 @@ ValueOrRange = Union[FixedValue, RangeValue]
 # Commands (effects of choices)
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class CounterMod:
     """Modify a counter: counter:hazine 20 or counter:ordu -10?20
@@ -94,6 +102,7 @@ class CounterMod:
     - counter:treasure -20?-1  -> subtract random 1-20
     - counter:treasure -5?10   -> add random between -5 and +10
     """
+
     counter_id: str
     value: ValueOrRange  # Value includes sign (can be negative)
     loc: Optional[SourceLocation] = None
@@ -102,6 +111,7 @@ class CounterMod:
 @dataclass(frozen=True)
 class FlagSet:
     """Set a flag: +flag:winter"""
+
     flag_id: str
     loc: Optional[SourceLocation] = None
 
@@ -109,6 +119,7 @@ class FlagSet:
 @dataclass(frozen=True)
 class FlagClear:
     """Clear a flag: -flag:winter"""
+
     flag_id: str
     loc: Optional[SourceLocation] = None
 
@@ -116,6 +127,7 @@ class FlagClear:
 @dataclass(frozen=True)
 class CardQueue:
     """Queue a card immediately: card:intro"""
+
     card_id: str
     loc: Optional[SourceLocation] = None
 
@@ -127,6 +139,7 @@ class CardBranch:
     Runtime picks the first card whose require conditions are met.
     If none match, branch is skipped.
     """
+
     card_ids: tuple[str, ...]
     loc: Optional[SourceLocation] = None
 
@@ -134,6 +147,7 @@ class CardBranch:
 @dataclass(frozen=True)
 class CardTimed:
     """Queue a card after N turns: card:intro@5"""
+
     card_id: str
     delay: int
     loc: Optional[SourceLocation] = None
@@ -147,21 +161,26 @@ class Trigger:
     - response: Shows text after choice (card flips, shows response)
     - sound: Plays a sound effect
     """
+
     trigger_type: str  # "response", "sound"
-    value: str         # Text or sound file name
+    value: str  # Text or sound file name
     loc: Optional[SourceLocation] = None
 
 
-Command = Union[CounterMod, FlagSet, FlagClear, CardQueue, CardBranch, CardTimed, Trigger]
+Command = Union[
+    CounterMod, FlagSet, FlagClear, CardQueue, CardBranch, CardTimed, Trigger
+]
 
 
 # =============================================================================
 # Weight (with optional condition)
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class Weight:
     """A weight value with optional 'when' condition."""
+
     value: float
     condition: Optional[Condition] = None
     loc: Optional[SourceLocation] = None
@@ -171,9 +190,11 @@ class Weight:
 # Card components
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class Bearer:
     """Card bearer: character with optional variant (emotion, state, pose)."""
+
     character_id: str
     variant_id: Optional[str] = None
     loc: Optional[SourceLocation] = None
@@ -182,6 +203,7 @@ class Bearer:
 @dataclass(frozen=True)
 class Choice:
     """A card choice (left or right swipe)."""
+
     label: str
     commands: tuple[Command, ...] = ()
     loc: Optional[SourceLocation] = None
@@ -191,8 +213,10 @@ class Choice:
 # Entity Definitions
 # =============================================================================
 
+
 class AggregateType(Enum):
     """Aggregate function types for virtual counters."""
+
     AVERAGE = auto()
     SUM = auto()
     MIN = auto()
@@ -201,8 +225,9 @@ class AggregateType(Enum):
 
 class TrackType(Enum):
     """What to track for tracking counters."""
+
     YES = auto()  # Track yes responses
-    NO = auto()   # Track no responses
+    NO = auto()  # Track no responses
 
 
 @dataclass(frozen=True)
@@ -213,16 +238,17 @@ class Counter:
     Virtual counter (aggregate): computed from other counters
     Virtual counter (tracking): counts player responses to a character
     """
+
     id: str
     name: str
     icon: str = ""
     start: int = 50
     color: str = ""
     killer: bool = False  # if True, game over when 0 or 100
-    keep: bool = False    # if True, persists across reigns
+    keep: bool = False  # if True, persists across reigns
 
     # Virtual counter - aggregate (e.g., overall = average of all killers)
-    source: tuple[str, ...] = ()       # Source counter/character IDs
+    source: tuple[str, ...] = ()  # Source counter/character IDs
     aggregate: Optional[AggregateType] = None  # average, sum, min, max
 
     # Virtual counter - tracking (e.g., yes_merchant counts yes responses)
@@ -239,16 +265,18 @@ class Counter:
 @dataclass(frozen=True)
 class Flag:
     """A game flag (boolean state)."""
+
     id: str
     name: str
     bind: Optional[str] = None  # Character ID this flag controls
-    keep: bool = False          # if True, persists across reigns
+    keep: bool = False  # if True, persists across reigns
     loc: Optional[SourceLocation] = None
 
 
 @dataclass(frozen=True)
 class Variant:
     """A character variant (emotion, state, pose) for portraits."""
+
     id: str
     name: str
     prompt: str = ""
@@ -258,6 +286,7 @@ class Variant:
 @dataclass(frozen=True)
 class Character:
     """A game character (role-based)."""
+
     id: str
     name: str
     prompt: str = ""
@@ -265,7 +294,7 @@ class Character:
 
 
 # Lockturn special values
-LOCKTURN_ONCE = "once"      # Lock for this reign only (resets on king death)
+LOCKTURN_ONCE = "once"  # Lock for this reign only (resets on king death)
 LOCKTURN_DISPOSE = "dispose"  # Remove from game permanently after showing
 
 # Type alias for lockturn: int (turns) | "once" | "dispose" | None
@@ -286,6 +315,7 @@ class Card:
       - "once": Lock for rest of reign (resets on king death)
       - "dispose": Remove permanently (intro cards, one-time events)
     """
+
     id: str
     name: str
     bearer: Optional[Bearer] = None
@@ -301,6 +331,7 @@ class Card:
 @dataclass(frozen=True)
 class Settings:
     """Game settings."""
+
     id: str  # Usually "main"
     name: str
     description: str = ""
@@ -314,9 +345,11 @@ class Settings:
 # Import statement
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class Import:
     """Import another .tahta file: import "path/to/file.tahta" """
+
     path: str  # Relative path to the file
     loc: Optional[SourceLocation] = None
 
@@ -325,9 +358,11 @@ class Import:
 # Game (root container)
 # =============================================================================
 
+
 @dataclass(frozen=True)
 class Game:
     """Root container for all game data."""
+
     imports: tuple[Import, ...] = ()
     settings: Optional[Settings] = None
     counters: tuple[Counter, ...] = ()

@@ -3,10 +3,8 @@
 import json
 from pathlib import Path
 
-from tools.parser import Parser, validate_game
-from tools.parser.validator import resolve_imports
 from tools.compiler.main import game_to_dict
-
+from tools.parser import Parser, validate_game
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
@@ -81,7 +79,9 @@ class TestMinimalFeatures:
         game = self._get_game()
         ring_cards = [c for c in game.cards if c.ring]
         for card in ring_cards:
-            assert card.id.startswith("_"), f"Ring card {card.id} missing _ prefix"
+            assert card.id.startswith("_"), (
+                f"Ring card {card.id} missing _ prefix"
+            )
 
     def test_non_ring_cards_have_weight(self):
         game = self._get_game()
@@ -96,7 +96,9 @@ class TestMinimalFeatures:
             for w in card.weights:
                 if w.condition is not None:
                     conditional.append(w)
-        assert len(conditional) > 0, "No conditional weights found in minimal.tahta"
+        assert len(conditional) > 0, (
+            "No conditional weights found in minimal.tahta"
+        )
 
 
 class TestTutorialFeatures:
@@ -125,7 +127,8 @@ class TestTutorialFeatures:
 
     def test_flag_operations_in_choices(self):
         """Tutorial should have both flag set and flag clear commands."""
-        from tools.parser.ast import FlagSet, FlagClear
+        from tools.parser.ast import FlagClear, FlagSet
+
         game = self._get_game()
         has_set = False
         has_clear = False
@@ -141,6 +144,7 @@ class TestTutorialFeatures:
 
     def test_card_branching(self):
         from tools.parser.ast import CardBranch
+
         game = self._get_game()
         branches = []
         for card in game.cards:
@@ -152,12 +156,15 @@ class TestTutorialFeatures:
 
     def test_range_values_in_commands(self):
         from tools.parser.ast import CounterMod, RangeValue
+
         game = self._get_game()
         ranges = []
         for card in game.cards:
             for choice in card.choices:
                 for cmd in choice.commands:
-                    if isinstance(cmd, CounterMod) and isinstance(cmd.value, RangeValue):
+                    if isinstance(cmd, CounterMod) and isinstance(
+                        cmd.value, RangeValue
+                    ):
                         ranges.append(cmd)
         assert len(ranges) > 0, "No RangeValue commands in tutorial"
 
@@ -170,8 +177,8 @@ class TestTutorialFeatures:
 class TestJsonCompleteness:
     def test_all_operators_in_json(self):
         """Test that all comparison operators serialize correctly."""
-        from tools.parser import Parser
         from tools.compiler.main import game_to_dict
+        from tools.parser import Parser
 
         source = (
             "X (counter:x)\n"
@@ -198,8 +205,8 @@ class TestJsonCompleteness:
             "A (card:_a, ring)\n\t* go:\n"
             "B (card:_b, ring)\n\t* go:\n"
             "C (card:c)\n"
-            '\t* Go: counter:x 10, counter:x -5?5, +flag:f, -flag:f, '
-            'card:next, card:next@3, [card:_a, card:_b], '
+            "\t* Go: counter:x 10, counter:x -5?5, +flag:f, -flag:f, "
+            "card:next, card:next@3, [card:_a, card:_b], "
             'trigger:response "hi", trigger:sound "fx.wav"\n'
         )
         data = game_to_dict(Parser().parse_string(source, "<test>"))
