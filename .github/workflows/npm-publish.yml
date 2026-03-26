@@ -16,11 +16,10 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
-      - run: npm install --ignore-scripts
-      - name: Install tree-sitter CLI binary
-        run: node node_modules/tree-sitter-cli/install.js
-      - run: npx tree-sitter generate
-      - run: npm rebuild
+      - name: Install tree-sitter CLI globally
+        run: npm install -g tree-sitter-cli
+      - run: tree-sitter generate
+      - run: npm install
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
