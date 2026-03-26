@@ -17,7 +17,7 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
       - run: npm install --ignore-scripts
-      - run: npx tree-sitter generate
+      - run: npx --yes tree-sitter-cli generate
       - run: npm rebuild
       - run: npm publish
         env:
