@@ -2,8 +2,8 @@
 
 import pytest
 
-from tools.parser import ParseError, Parser
-from tools.parser.ast import (
+from tahtlang.parser import ParseError, Parser
+from tahtlang.parser.ast import (
     LOCKTURN_DISPOSE,
     LOCKTURN_ONCE,
     AggregateType,

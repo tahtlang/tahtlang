@@ -54,7 +54,7 @@ pip install -e .
 ### Validate a file
 
 ```bash
-$ python -m tools.compiler examples/minimal.tahta --validate
+$ tahtlang examples/minimal.tahta --validate
 OK Validation successful
   10 cards
   4 characters
@@ -65,13 +65,13 @@ OK Validation successful
 ### Parse and dump AST
 
 ```bash
-$ python -m tools.compiler examples/tutorial.tahta --dump-ast
+$ tahtlang examples/tutorial.tahta --dump-ast
 ```
 
 ### Start LSP server
 
 ```bash
-$ python -m tools.lsp
+$ python -m tahtlang.lsp
 ```
 
 ## Editor Support

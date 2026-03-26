@@ -3,9 +3,9 @@
 import json
 from pathlib import Path
 
-from tools.compiler.main import game_to_dict
-from tools.parser import Parser, validate_game
-from tools.parser.ast import (
+from tahtlang.compiler.main import game_to_dict
+from tahtlang.parser import Parser, validate_game
+from tahtlang.parser.ast import (
     CardBranch,
     CounterMod,
     FlagClear,

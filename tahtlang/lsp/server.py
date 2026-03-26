@@ -13,9 +13,9 @@ from typing import Optional
 from lsprotocol import types as lsp
 from pygls.lsp.server import LanguageServer
 
-from tools.parser import ParseError, Parser, validate_game
-from tools.parser.ast import Game
-from tools.parser.lexer import Lexer, LineType
+from tahtlang.parser import ParseError, Parser, validate_game
+from tahtlang.parser.ast import Game
+from tahtlang.parser.lexer import Lexer, LineType
 
 
 class TahtaLanguageServer(LanguageServer):

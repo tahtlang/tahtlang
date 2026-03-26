@@ -11,7 +11,7 @@ import tree_sitter_tahta
 from tree_sitter import Language
 from tree_sitter import Parser as TSParser
 
-from tools.parser import ParseError, Parser
+from tahtlang.parser import ParseError, Parser
 
 # =========================================================================
 # Setup

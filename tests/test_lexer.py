@@ -2,8 +2,8 @@
 
 import pytest
 
-from tools.parser.errors import ParseError
-from tools.parser.lexer import EntityType, Lexer, Line, LineType, Modifier
+from tahtlang.parser.errors import ParseError
+from tahtlang.parser.lexer import EntityType, Lexer, Line, LineType, Modifier
 
 
 def lex(source: str) -> list[Line]:

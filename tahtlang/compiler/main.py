@@ -12,8 +12,8 @@ import argparse
 import json
 import sys
 
-from tools.parser import ParseError
-from tools.parser.ast import (
+from tahtlang.parser import ParseError
+from tahtlang.parser.ast import (
     Bearer,
     Card,
     CardBranch,
@@ -31,10 +31,10 @@ from tools.parser.ast import (
     Trigger,
     Weight,
 )
-from tools.parser.validator import (
+from tahtlang.parser.validator import (
     resolve_imports,
 )
-from tools.parser.validator import (
+from tahtlang.parser.validator import (
     validate_game as validate_game_semantics,
 )
 

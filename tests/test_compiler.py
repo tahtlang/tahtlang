@@ -2,8 +2,8 @@
 
 import json
 
-from tools.compiler.main import game_to_dict
-from tools.parser import Parser
+from tahtlang.compiler.main import game_to_dict
+from tahtlang.parser import Parser
 
 
 def compile_to_dict(source: str) -> dict:

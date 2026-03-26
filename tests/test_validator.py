@@ -1,7 +1,7 @@
 """Tests for the semantic validator."""
 
 
-from tools.parser import Parser, ValidationResult, validate_game
+from tahtlang.parser import Parser, ValidationResult, validate_game
 
 
 def validate(source: str) -> ValidationResult:
