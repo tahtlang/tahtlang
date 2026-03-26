@@ -365,7 +365,7 @@ class Settings:
 
 @dataclass(frozen=True)
 class Import:
-    """Import another .tahta file: import "path/to/file.tahta" """
+    """Import another .taht file: import "path/to/file.taht" """
 
     path: str  # Relative path to the file
     loc: Optional[SourceLocation] = None

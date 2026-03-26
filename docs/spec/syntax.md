@@ -25,7 +25,7 @@ All entity references use explicit type prefixes. This enables LSP autocomplete 
 
 Entities are defined at the top of the file, before cards.
 
-```tahta
+```taht
 # Format: DisplayName (type:id, ...modifiers)
 
 # Settings
@@ -58,7 +58,7 @@ General (character:general)
 
 ## Card Structure
 
-```tahta
+```taht
 Card Name (card:card-id)
     bearer: character:name (variant:emotion)
     require: conditions
@@ -83,14 +83,14 @@ Card Name (card:card-id)
 
 ### Bearer Syntax
 
-```tahta
+```taht
 bearer: character:advisor                    # Simple
 bearer: character:advisor (variant:angry)    # With emotion
 ```
 
 ### Weight Syntax
 
-```tahta
+```taht
 weight: 1.0                              # Always this weight
 weight: 2.0 when counter:treasury < 30   # Conditional weight
 weight: 0.5 when flag:war                # Multiple conditions ok
@@ -108,7 +108,7 @@ weight: 0.5 when flag:war                # Multiple conditions ok
 
 Used in `require:` and `weight: N when`.
 
-```tahta
+```taht
 require: flag:war                    # Flag must be set
 require: !flag:war                   # Flag must NOT be set
 require: counter:treasury < 30       # Counter less than
@@ -123,7 +123,7 @@ After the colon in a choice:
 
 ### Counter Modification
 
-```tahta
+```taht
 * Choice: counter:treasury 20       # Add 20
 * Choice: counter:treasury -20      # Subtract 20
 * Choice: counter:army 10?30        # Random between 10-30
@@ -133,14 +133,14 @@ After the colon in a choice:
 
 ### Flag Modification
 
-```tahta
+```taht
 * Choice: +flag:war                 # Set flag
 * Choice: -flag:war                 # Remove flag
 ```
 
 ### Card Queuing
 
-```tahta
+```taht
 * Choice: card:next                 # Queue card (shows next)
 * Choice: card:event@5              # Schedule for 5 turns later
 * Choice: card:a, card:b, card:c    # Queue multiple (in order)
@@ -148,7 +148,7 @@ After the colon in a choice:
 
 ### Branching
 
-```tahta
+```taht
 * Choice: [card:_path_a, card:_path_b]   # First with passing require
 ```
 
@@ -156,14 +156,14 @@ The runtime picks the first card in the list whose `require` conditions pass.
 
 ### Triggers
 
-```tahta
+```taht
 * Choice: trigger:response "The king nods."    # Show response text
 * Choice: trigger:sound "sword.wav"            # Play sound
 ```
 
 ### Combined Effects
 
-```tahta
+```taht
 * Raise taxes: counter:treasury 20, counter:popularity -15, +flag:high_tax
 * Go to war: counter:army -10, +flag:war, card:_battle@3
 ```
@@ -172,7 +172,7 @@ The runtime picks the first card in the list whose `require` conditions pass.
 
 Ring cards can only appear via queue/schedule, never from the random pool.
 
-```tahta
+```taht
 Battle Start (card:_battle, ring)
     bearer: character:general
     require: flag:war
@@ -210,14 +210,14 @@ Defeat (card:_defeat, ring)
 
 ## Comments
 
-```tahta
+```taht
 # This is a comment
 # Comments start with # and extend to end of line
 ```
 
 ## Complete Example
 
-```tahta
+```taht
 # Settings
 Game Settings (settings:main)
 

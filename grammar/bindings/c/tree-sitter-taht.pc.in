@@ -2,10 +2,10 @@ prefix=@PREFIX@
 libdir=@LIBDIR@
 includedir=@INCLUDEDIR@
 
-Name: tree-sitter-tahta
+Name: tree-sitter-taht
 Description: Tahta grammar for tree-sitter
 URL: @URL@
 Version: @VERSION@
 Requires: @REQUIRES@
-Libs: -L${libdir} @ADDITIONAL_LIBS@ -ltree-sitter-tahta
+Libs: -L${libdir} @ADDITIONAL_LIBS@ -ltree-sitter-taht
 Cflags: -I${includedir}

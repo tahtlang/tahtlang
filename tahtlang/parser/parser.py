@@ -59,7 +59,7 @@ class Parser:
 
     Usage:
         parser = Parser()
-        game = parser.parse_file("game.tahta")
+        game = parser.parse_file("game.taht")
     """
 
     def __init__(self):
@@ -78,7 +78,7 @@ class Parser:
         self._cards: list[Card] = []
 
     def parse_file(self, filepath: str) -> Game:
-        """Parse a .tahta file and return the Game AST."""
+        """Parse a .taht file and return the Game AST."""
         path = Path(filepath)
         self.base_path = path.parent
         self.current_file = str(path)

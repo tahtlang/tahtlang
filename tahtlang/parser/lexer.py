@@ -18,7 +18,7 @@ class LineType(Enum):
 
     EMPTY = auto()
     COMMENT = auto()
-    # import "path/to/file.tahta"
+    # import "path/to/file.taht"
     IMPORT = auto()
     # Name (type, id, ...flags)
     ENTITY_HEADER = auto()
@@ -69,7 +69,7 @@ class Line:
     indent: int = 0
 
     # Extracted parts (depending on type)
-    import_path: Optional[str] = None  # for IMPORT: "path/to/file.tahta"
+    import_path: Optional[str] = None  # for IMPORT: "path/to/file.taht"
     entity_name: Optional[str] = None  # for ENTITY_HEADER: "Yeniceri Ağası"
     entity_type: Optional[EntityType] = (
         None  # for ENTITY_HEADER: EntityType.CHARACTER

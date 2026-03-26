@@ -395,7 +395,7 @@ def validate_game(game: Game) -> ValidationResult:
 
 def resolve_imports(filepath: str) -> tuple[Game, ValidationResult]:
     """
-    Parse a .tahta file and recursively resolve all imports.
+    Parse a .taht file and recursively resolve all imports.
 
     Returns a merged Game with all entities from imported files,
     and a ValidationResult with any import-related errors.

@@ -1,5 +1,5 @@
 """
 TahtLang Compiler
 
-Compiles .tahta files to JSON game data.
+Compiles .taht files to JSON game data.
 """

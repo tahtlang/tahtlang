@@ -1,4 +1,4 @@
-"""Allow running as: python -m tahta_compiler"""
+"""Allow running as: python -m tahtlang_compiler"""
 
 from .main import main
 

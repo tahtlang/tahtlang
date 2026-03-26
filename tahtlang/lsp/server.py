@@ -22,7 +22,7 @@ class TahtaLanguageServer(LanguageServer):
     """Language server for TahtLang."""
 
     def __init__(self):
-        super().__init__("tahta-lsp", "v0.1")
+        super().__init__("tahtlang-lsp", "v0.1")
         # Cached game data per workspace
         self.games: dict[str, Game] = {}
         # Entity lookup dicts: {uri: {"characters": {...}, ...}}
@@ -44,7 +44,7 @@ class TahtaLanguageServer(LanguageServer):
             ),
             message=message,
             severity=lsp.DiagnosticSeverity.Error,
-            source="tahta",
+            source="tahtlang",
         )
 
     def parse_document(self, uri: str, source: str) -> list[lsp.Diagnostic]:

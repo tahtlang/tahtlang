@@ -1,4 +1,4 @@
-module github.com/tree-sitter/tree-sitter-tahta
+module github.com/tree-sitter/tree-sitter-taht
 
 go 1.22
 

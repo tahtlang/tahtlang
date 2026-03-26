@@ -3,7 +3,7 @@
 // Line-oriented DSL - parsing is simpler line by line
 
 module.exports = grammar({
-  name: 'tahta',
+  name: 'taht',
 
   extras: $ => [/[ ]+/],  // Ignore spaces (but not tabs - they're significant)
 
@@ -17,7 +17,7 @@ module.exports = grammar({
       /\r?\n/
     ),
 
-    // Import statement: import "path/to/file.tahta"
+    // Import statement: import "path/to/file.taht"
     import_statement: $ => seq(
       token(prec(10, 'import')),
       $.string,

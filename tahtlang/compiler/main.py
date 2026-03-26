@@ -3,9 +3,9 @@
 TahtLang Compiler CLI
 
 Usage:
-    python -m compiler game.tahta              # Output to stdout
-    python -m compiler game.tahta -o game.json # Output to file
-    python -m compiler game.tahta --validate   # Only validate, no output
+    python -m compiler game.taht              # Output to stdout
+    python -m compiler game.taht -o game.json # Output to file
+    python -m compiler game.taht --validate   # Only validate, no output
 """
 
 import argparse
@@ -202,9 +202,9 @@ def game_to_dict(game: Game) -> dict:
 
 def main():
     arg_parser = argparse.ArgumentParser(
-        description="TahtLang Compiler - compiles .tahta files to JSON"
+        description="TahtLang Compiler - compiles .taht files to JSON"
     )
-    arg_parser.add_argument("input", help="Input .tahta file")
+    arg_parser.add_argument("input", help="Input .taht file")
     arg_parser.add_argument("-o", "--output", help="Output JSON file")
     arg_parser.add_argument(
         "--validate", action="store_true", help="Validate only, no output"

@@ -1,14 +1,14 @@
 .TH TAHTLANG 1 "March 2026" "tahtlang 0.1.0" "User Commands"
 .SH NAME
-tahtlang \- compile TahtLang (.tahta) files to JSON
+tahtlang \- compile TahtLang (.taht) files to JSON
 .SH SYNOPSIS
 .B tahtlang
-.I file.tahta
+.I file.taht
 .RI [ options ]
 .SH DESCRIPTION
 .B tahtlang
 compiles
-.B .tahta
+.B .taht
 files into JSON game data for Reigns-style card games.
 .PP
 TahtLang is a human-readable, line-based DSL designed for
@@ -31,7 +31,7 @@ Validate a game file:
 .PP
 .nf
 .RS
-tahtlang game.tahta --validate
+tahtlang game.taht --validate
 .RE
 .fi
 .PP
@@ -39,7 +39,7 @@ Compile to a JSON file:
 .PP
 .nf
 .RS
-tahtlang game.tahta -o game.json
+tahtlang game.taht -o game.json
 .RE
 .fi
 .PP
@@ -47,12 +47,12 @@ Compile to stdout with compact output:
 .PP
 .nf
 .RS
-tahtlang game.tahta --compact
+tahtlang game.taht --compact
 .RE
 .fi
 .SH FILE FORMAT
 A
-.B .tahta
+.B .taht
 file consists of entity definitions followed by card definitions.
 .SS Entity Definitions
 Entities are defined one per line with display name, type prefix, and optional modifiers:

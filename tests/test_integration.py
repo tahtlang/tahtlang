@@ -24,20 +24,20 @@ EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 class TestExampleFiles:
     def test_minimal_parses(self):
         parser = Parser()
-        game = parser.parse_file(str(EXAMPLES_DIR / "minimal.tahta"))
+        game = parser.parse_file(str(EXAMPLES_DIR / "minimal.taht"))
         assert len(game.cards) > 0
         assert len(game.counters) > 0
         assert len(game.characters) > 0
 
     def test_minimal_validates(self):
         parser = Parser()
-        game = parser.parse_file(str(EXAMPLES_DIR / "minimal.tahta"))
+        game = parser.parse_file(str(EXAMPLES_DIR / "minimal.taht"))
         result = validate_game(game)
         assert result.is_valid, f"Validation errors: {result.errors}"
 
     def test_minimal_compiles_to_json(self):
         parser = Parser()
-        game = parser.parse_file(str(EXAMPLES_DIR / "minimal.tahta"))
+        game = parser.parse_file(str(EXAMPLES_DIR / "minimal.taht"))
         data = game_to_dict(game)
         json_str = json.dumps(data, ensure_ascii=False)
         parsed = json.loads(json_str)
@@ -47,19 +47,19 @@ class TestExampleFiles:
 
     def test_tutorial_parses(self):
         parser = Parser()
-        game = parser.parse_file(str(EXAMPLES_DIR / "tutorial.tahta"))
+        game = parser.parse_file(str(EXAMPLES_DIR / "tutorial.taht"))
         assert len(game.cards) > 0
         assert len(game.counters) > 0
 
     def test_tutorial_validates(self):
         parser = Parser()
-        game = parser.parse_file(str(EXAMPLES_DIR / "tutorial.tahta"))
+        game = parser.parse_file(str(EXAMPLES_DIR / "tutorial.taht"))
         result = validate_game(game)
         assert result.is_valid, f"Validation errors: {result.errors}"
 
     def test_tutorial_compiles_to_json(self):
         parser = Parser()
-        game = parser.parse_file(str(EXAMPLES_DIR / "tutorial.tahta"))
+        game = parser.parse_file(str(EXAMPLES_DIR / "tutorial.taht"))
         data = game_to_dict(game)
         json_str = json.dumps(data, ensure_ascii=False, indent=2)
         parsed = json.loads(json_str)
@@ -72,10 +72,10 @@ class TestExampleFiles:
 
 
 class TestMinimalFeatures:
-    """Test specific features present in minimal.tahta."""
+    """Test specific features present in minimal.taht."""
 
     def _get_game(self):
-        return Parser().parse_file(str(EXAMPLES_DIR / "minimal.tahta"))
+        return Parser().parse_file(str(EXAMPLES_DIR / "minimal.taht"))
 
     def test_killer_counters(self):
         game = self._get_game()
@@ -104,15 +104,15 @@ class TestMinimalFeatures:
                 if w.condition is not None:
                     conditional.append(w)
         assert len(conditional) > 0, (
-            "No conditional weights found in minimal.tahta"
+            "No conditional weights found in minimal.taht"
         )
 
 
 class TestTutorialFeatures:
-    """Test specific features present in tutorial.tahta."""
+    """Test specific features present in tutorial.taht."""
 
     def _get_game(self):
-        return Parser().parse_file(str(EXAMPLES_DIR / "tutorial.tahta"))
+        return Parser().parse_file(str(EXAMPLES_DIR / "tutorial.taht"))
 
     def test_settings_present(self):
         game = self._get_game()

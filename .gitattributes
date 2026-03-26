@@ -1,3 +1,3 @@
-# Treat .tahta files as Ruby for GitHub syntax highlighting
+# Treat .taht files as Ruby for GitHub syntax highlighting
 # (closest match until TahtLang is added to Linguist)
-*.tahta linguist-language=Ruby
+*.taht linguist-language=Ruby

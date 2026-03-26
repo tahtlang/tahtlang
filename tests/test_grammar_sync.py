@@ -1,13 +1,13 @@
 """Tests that Tree-sitter grammar and Python parser stay in sync.
 
-Both parsers should agree on whether a .tahta source is valid or not.
+Both parsers should agree on whether a .taht source is valid or not.
 If they disagree, one of them is out of date.
 """
 
 from pathlib import Path
 
 import pytest
-import tree_sitter_tahta
+import tree_sitter_taht
 from tree_sitter import Language
 from tree_sitter import Parser as TSParser
 
@@ -17,7 +17,7 @@ from tahtlang.parser import ParseError, Parser
 # Setup
 # =========================================================================
 
-LANG = Language(tree_sitter_tahta.language())
+LANG = Language(tree_sitter_taht.language())
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 
 
@@ -46,27 +46,27 @@ class TestExampleFilesSync:
     """Both parsers must parse example files without errors."""
 
     def test_minimal_ts(self):
-        source = (EXAMPLES_DIR / "minimal.tahta").read_text()
+        source = (EXAMPLES_DIR / "minimal.taht").read_text()
         assert not ts_has_error(source), (
-            "Tree-sitter found errors in minimal.tahta"
+            "Tree-sitter found errors in minimal.taht"
         )
 
     def test_minimal_py(self):
-        source = (EXAMPLES_DIR / "minimal.tahta").read_text()
+        source = (EXAMPLES_DIR / "minimal.taht").read_text()
         assert not py_has_error(source), (
-            "Python parser found errors in minimal.tahta"
+            "Python parser found errors in minimal.taht"
         )
 
     def test_tutorial_ts(self):
-        source = (EXAMPLES_DIR / "tutorial.tahta").read_text()
+        source = (EXAMPLES_DIR / "tutorial.taht").read_text()
         assert not ts_has_error(source), (
-            "Tree-sitter found errors in tutorial.tahta"
+            "Tree-sitter found errors in tutorial.taht"
         )
 
     def test_tutorial_py(self):
-        source = (EXAMPLES_DIR / "tutorial.tahta").read_text()
+        source = (EXAMPLES_DIR / "tutorial.taht").read_text()
         assert not py_has_error(source), (
-            "Python parser found errors in tutorial.tahta"
+            "Python parser found errors in tutorial.taht"
         )
 
 
@@ -245,6 +245,6 @@ class TestCardStructureSync:
 
 class TestImportSync:
     def test_import(self):
-        source = 'import "other.tahta"\n'
+        source = 'import "other.taht"\n'
         assert not ts_has_error(source), "Tree-sitter rejected import"
         assert not py_has_error(source), "Python parser rejected import"

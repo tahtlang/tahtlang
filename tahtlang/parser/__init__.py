@@ -1,7 +1,7 @@
 """
 TahtLang Parser
 
-Parses .tahta files into an AST (Abstract Syntax Tree).
+Parses .taht files into an AST (Abstract Syntax Tree).
 Used by both the compiler and the LSP server.
 """
 

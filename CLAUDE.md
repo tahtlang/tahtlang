@@ -6,8 +6,8 @@ Reigns-style card game DSL. Python toolchain (lexer → parser → validator →
 
 ```bash
 pip install -e .
-tahtlang examples/minimal.tahta --validate
-tahtlang game.tahta --pretty
+tahtlang examples/minimal.taht --validate
+tahtlang game.taht --pretty
 python -m pytest tests/
 ```
 

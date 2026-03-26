@@ -6,9 +6,9 @@ A domain-specific language for creating Reigns-style card games.
 
 ## What is TahtLang?
 
-TahtLang is a human-readable text format for defining card game content. Instead of complex JSON or visual editors, you write `.tahta` files that are easy to read, version control, and edit with any text editor.
+TahtLang is a human-readable text format for defining card game content. Instead of complex JSON or visual editors, you write `.taht` files that are easy to read, version control, and edit with any text editor.
 
-```tahta
+```taht
 # Define your game elements
 Hazine (counter:hazine, killer)
 Ordu (counter:ordu, killer)
@@ -54,7 +54,7 @@ pip install -e .
 ### Validate a file
 
 ```bash
-$ tahtlang examples/minimal.tahta --validate
+$ tahtlang examples/minimal.taht --validate
 OK Validation successful
   10 cards
   4 characters
@@ -65,7 +65,7 @@ OK Validation successful
 ### Parse and dump AST
 
 ```bash
-$ tahtlang examples/tutorial.tahta --dump-ast
+$ tahtlang examples/tutorial.taht --dump-ast
 ```
 
 ### Start LSP server
@@ -86,8 +86,8 @@ Extension coming soon.
 
 ## Examples
 
-- [`examples/minimal.tahta`](examples/minimal.tahta) - Quick start, minimal game
-- [`examples/tutorial.tahta`](examples/tutorial.tahta) - Annotated tutorial with explanations
+- [`examples/minimal.taht`](examples/minimal.taht) - Quick start, minimal game
+- [`examples/tutorial.taht`](examples/tutorial.taht) - Annotated tutorial with explanations
 
 ## Documentation
 
@@ -109,7 +109,7 @@ tahtlang/
 ├── docs/
 │   └── spec/              # Language specification
 │
-└── examples/              # Example .tahta files
+└── examples/              # Example .taht files
 ```
 
 ## License

@@ -2,10 +2,10 @@
 
 typedef struct TSLanguage TSLanguage;
 
-TSLanguage *tree_sitter_tahta(void);
+TSLanguage *tree_sitter_taht(void);
 
 static PyObject* _binding_language(PyObject *self, PyObject *args) {
-    return PyLong_FromVoidPtr(tree_sitter_tahta());
+    return PyLong_FromVoidPtr(tree_sitter_taht());
 }
 
 static PyMethodDef methods[] = {

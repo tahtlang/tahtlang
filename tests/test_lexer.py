@@ -62,19 +62,19 @@ class TestEmptyAndComments:
 
 class TestImports:
     def test_double_quote_import(self):
-        lines = lex_content('import "path/to/file.tahta"')
+        lines = lex_content('import "path/to/file.taht"')
         assert len(lines) == 1
         assert lines[0].type == LineType.IMPORT
-        assert lines[0].import_path == "path/to/file.tahta"
+        assert lines[0].import_path == "path/to/file.taht"
 
     def test_single_quote_import(self):
-        lines = lex_content("import 'other.tahta'")
+        lines = lex_content("import 'other.taht'")
         assert lines[0].type == LineType.IMPORT
-        assert lines[0].import_path == "other.tahta"
+        assert lines[0].import_path == "other.taht"
 
     def test_indented_import_not_recognized(self):
         """Import must be at column 0."""
-        lines = lex_content('\timport "file.tahta"')
+        lines = lex_content('\timport "file.taht"')
         assert lines[0].type != LineType.IMPORT
 
 
