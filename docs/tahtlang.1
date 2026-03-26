@@ -1,0 +1,132 @@
+.TH TAHTLANG 1 "March 2026" "tahtlang 0.1.0" "User Commands"
+.SH NAME
+tahtlang \- compile TahtLang (.tahta) files to JSON
+.SH SYNOPSIS
+.B tahtlang
+.I file.tahta
+.RI [ options ]
+.SH DESCRIPTION
+.B tahtlang
+compiles
+.B .tahta
+files into JSON game data for Reigns-style card games.
+.PP
+TahtLang is a human-readable, line-based DSL designed for
+Vim-friendly editing and clean version control diffs.
+.SH OPTIONS
+.TP
+.B \-o, \-\-output FILE
+Write JSON output to FILE instead of stdout.
+.TP
+.B \-\-validate
+Validate only; print diagnostics and exit without producing output.
+.TP
+.B \-\-pretty
+Pretty-print JSON with indentation (default).
+.TP
+.B \-\-compact
+Produce minified JSON without whitespace.
+.SH EXAMPLES
+Validate a game file:
+.PP
+.nf
+.RS
+tahtlang game.tahta --validate
+.RE
+.fi
+.PP
+Compile to a JSON file:
+.PP
+.nf
+.RS
+tahtlang game.tahta -o game.json
+.RE
+.fi
+.PP
+Compile to stdout with compact output:
+.PP
+.nf
+.RS
+tahtlang game.tahta --compact
+.RE
+.fi
+.SH FILE FORMAT
+A
+.B .tahta
+file consists of entity definitions followed by card definitions.
+.SS Entity Definitions
+Entities are defined one per line with display name, type prefix, and optional modifiers:
+.PP
+.nf
+.RS
+Treasury (counter:treasury, killer)
+War Active (flag:war)
+Advisor (character:advisor)
+.RE
+.fi
+.SS Type Prefixes
+.TP
+.B counter:
+Numeric value (0\(en100). Add
+.B killer
+to trigger game over at boundaries.
+.TP
+.B flag:
+Boolean state. Add
+.B keep
+to persist across reigns.
+.TP
+.B character:
+NPC who delivers cards.
+.TP
+.B card:
+A card definition.
+.TP
+.B variant:
+Character variant (emotion, pose).
+.TP
+.B settings:
+Game settings block.
+.SS Card Structure
+.PP
+.nf
+.RS
+Tax Proposal (card:tax)
+    bearer: character:advisor
+    weight: 1.0
+    weight: 2.0 when counter:treasury < 30
+    require: !flag:war
+    lockturn: 10
+    > The treasury needs funds.
+    * Raise taxes: counter:treasury 20, counter:people -15
+    * Cut spending: counter:treasury 10
+.RE
+.fi
+.SS Choice Effects
+Counter modification
+.RB ( "counter:id N" ),
+flag set/clear
+.RB ( "+flag:id" ", " "-flag:id" ),
+card queuing
+.RB ( "card:id" ", " "card:id@N" ),
+branching
+.RB ( "[card:a, card:b]" ),
+and triggers
+.RB ( "trigger:type \(dqvalue\(dq" ).
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+Parse error, validation error, or file not found.
+.SH SEE ALSO
+Full syntax reference:
+.I docs/spec/syntax.md
+in the source repository.
+.PP
+.UR https://github.com/tahtlang/tahtlang
+.UE
+.SH AUTHORS
+Mirat Can Bayrak
+.RI < miratcanbayrak@gmail.com >
