@@ -78,7 +78,42 @@ $ python -m tahtlang.lsp
 
 ### Neovim
 
-Add to your tree-sitter config and point to the grammar directory.
+1. Symlink the `vim/` directory into your Neovim runtime:
+
+```bash
+ln -s /path/to/tahtlang/vim ~/.config/nvim/after
+```
+
+2. Register the tree-sitter parser in your config:
+
+```lua
+local parser_config = require(
+  "nvim-treesitter.parsers"
+).get_parser_configs()
+
+parser_config.taht = {
+  install_info = {
+    url = "/path/to/tahtlang/grammar",
+    files = { "src/parser.c" },
+  },
+  filetype = "taht",
+}
+```
+
+3. Add LSP config:
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "taht",
+  callback = function()
+    vim.lsp.start({
+      name = "tahtlang-lsp",
+      cmd = { "python", "-m", "tahtlang.lsp" },
+      root_dir = vim.fn.getcwd(),
+    })
+  end,
+})
+```
 
 ### VS Code
 
