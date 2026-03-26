@@ -4,12 +4,18 @@ class Tahtlang < Formula
   version "0.1.0"
   license "MIT"
 
+  resource "manpage" do
+    url "https://raw.githubusercontent.com/tahtlang/tahtlang/v#{version}/docs/tahtlang.1"
+    sha256 "4775f4cf279d497653812a9296425514669dad3ac0c732a580f3d5714520f44a"
+  end
+
   on_macos do
     url "https://github.com/tahtlang/tahtlang/releases/download/v#{version}/tahtlang-macos-arm64"
     sha256 "4d6e16d3d229be7eb2cfe11f3ddb78bd0e6cfd097c900df626facc3a36895861"
 
     def install
       bin.install "tahtlang-macos-arm64" => "tahtlang"
+      resource("manpage").stage { man1.install "tahtlang.1" }
     end
   end
 
@@ -19,6 +25,7 @@ class Tahtlang < Formula
 
     def install
       bin.install "tahtlang-linux-x86_64" => "tahtlang"
+      resource("manpage").stage { man1.install "tahtlang.1" }
     end
   end
 
