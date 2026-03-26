@@ -6,7 +6,7 @@ class Tahtlang < Formula
 
   on_macos do
     url "https://github.com/tahtlang/tahtlang/releases/download/v#{version}/tahtlang-macos-arm64"
-    sha256 "PLACEHOLDER"
+    sha256 "4d6e16d3d229be7eb2cfe11f3ddb78bd0e6cfd097c900df626facc3a36895861"
 
     def install
       bin.install "tahtlang-macos-arm64" => "tahtlang"
@@ -15,7 +15,7 @@ class Tahtlang < Formula
 
   on_linux do
     url "https://github.com/tahtlang/tahtlang/releases/download/v#{version}/tahtlang-linux-x86_64"
-    sha256 "PLACEHOLDER"
+    sha256 "c5fe35928f8a869aa3629ad049b65e77393f40ce855dbb113e075e3de164e89e"
 
     def install
       bin.install "tahtlang-linux-x86_64" => "tahtlang"
