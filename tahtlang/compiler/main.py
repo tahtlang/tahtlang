@@ -7,7 +7,14 @@ import argparse
 import json
 import os
 import sys
+from collections import defaultdict
+from pathlib import Path
 
+from tahtlang.compiler.serializer import (
+    cards_to_taht,
+    entities_to_taht,
+    game_to_taht,
+)
 from tahtlang.parser import ParseError
 from tahtlang.parser.ast import (
     Bearer,
@@ -335,6 +342,78 @@ def cmd_init(args):
     print(f"  Compile:   tahtlang compile {filename}")
 
 
+def cmd_merge(args):
+    print_banner("Merge")
+    game = load_game(args.input)
+
+    output = game_to_taht(game)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(output)
+        print(f"[OK] Merged to '{args.output}'")
+    else:
+        print(output)
+
+
+def cmd_split(args):
+    print_banner("Split")
+    game = load_game(args.input)
+
+    input_path = Path(args.input)
+    name = input_path.stem
+    out_dir = Path(args.output) if args.output else Path(name)
+    cards_dir = out_dir / "kartlar"
+    cards_dir.mkdir(parents=True, exist_ok=True)
+
+    # Group cards by bearer character
+    by_char = defaultdict(list)
+    no_bearer = []
+    for card in game.cards:
+        if card.bearer:
+            by_char[card.bearer.character_id].append(card)
+        else:
+            no_bearer.append(card)
+
+    # Write main.taht: entities + imports + bearer-less cards
+    imports = []
+    for char_id in sorted(by_char):
+        imports.append(
+            f'import "kartlar/{char_id}.taht"'
+        )
+
+    main_parts = [entities_to_taht(game)]
+    if no_bearer:
+        main_parts.append(
+            "# Kartlar\n" + cards_to_taht(tuple(no_bearer))
+        )
+    main_parts.append("\n".join(imports) + "\n")
+
+    main_path = out_dir / "main.taht"
+    with open(main_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(main_parts))
+
+    print(f"  {main_path}")
+
+    # Write per-character card files
+    for char_id in sorted(by_char):
+        cards = by_char[char_id]
+        char_def = game.get_character(char_id)
+        title = char_def.name if char_def else char_id
+        content = (
+            f"# {title}\n\n"
+            + cards_to_taht(tuple(cards))
+        )
+        fpath = cards_dir / f"{char_id}.taht"
+        with open(fpath, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f"  {fpath} ({len(cards)} cards)")
+
+    total = len(game.cards)
+    files = len(by_char) + 1
+    print(f"\n[OK] {total} cards -> {files} files")
+
+
 def cmd_play(args):
     print_banner("Interactive Mode")
     game = load_game(args.input)
@@ -497,6 +576,31 @@ Docs: https://github.com/tahtlang/tahtlang
     )
     play_p.set_defaults(func=cmd_play)
 
+    # tahtlang merge <input> [-o output]
+    merge_p = subparsers.add_parser(
+        "merge", help="Merge imports into one file",
+    )
+    merge_p.add_argument(
+        "input", help="Source main.taht file",
+    )
+    merge_p.add_argument(
+        "-o", "--output", help="Output file path",
+    )
+    merge_p.set_defaults(func=cmd_merge)
+
+    # tahtlang split <input> [-o dir]
+    split_p = subparsers.add_parser(
+        "split", help="Split into per-character files",
+    )
+    split_p.add_argument(
+        "input", help="Source .taht file",
+    )
+    split_p.add_argument(
+        "-o", "--output",
+        help="Output directory (default: game name)",
+    )
+    split_p.set_defaults(func=cmd_split)
+
     # If no arguments at all, print a custom welcoming help
     if len(sys.argv) == 1:
         print_banner("Welcome")
@@ -505,7 +609,10 @@ Docs: https://github.com/tahtlang/tahtlang
 
     # If first argument is not a command, it's an implicit 'play' command
     args = sys.argv[1:]
-    commands = ["init", "compile", "stats", "play", "-h", "--help"]
+    commands = [
+        "init", "compile", "stats", "play",
+        "merge", "split", "-h", "--help",
+    ]
     if args and args[0] not in commands:
         # Insert 'play' as the first argument if it's likely a filename
         if not args[0].startswith("-"):

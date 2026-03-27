@@ -8,7 +8,9 @@ Features:
 - Go to Definition (jump to entity declaration)
 """
 
+from pathlib import Path
 from typing import Optional
+from urllib.parse import unquote, urlparse
 
 from lsprotocol import types as lsp
 from pygls.lsp.server import LanguageServer
@@ -16,6 +18,7 @@ from pygls.lsp.server import LanguageServer
 from tahtlang.parser import ParseError, Parser, validate_game
 from tahtlang.parser.ast import Game
 from tahtlang.parser.lexer import Lexer, LineType
+from tahtlang.parser.validator import resolve_imports
 
 
 class TahtaLanguageServer(LanguageServer):
@@ -47,36 +50,93 @@ class TahtaLanguageServer(LanguageServer):
             source="tahtlang",
         )
 
-    def parse_document(self, uri: str, source: str) -> list[lsp.Diagnostic]:
-        """Parse document and return diagnostics."""
-        diagnostics = []
+    @staticmethod
+    def _uri_to_path(uri: str) -> Optional[Path]:
+        """Convert file:// URI to filesystem path."""
+        parsed = urlparse(uri)
+        if parsed.scheme == "file":
+            return Path(unquote(parsed.path))
+        return None
+
+    @staticmethod
+    def _find_main_taht(file_path: Path) -> Optional[Path]:
+        """Walk up from file_path looking for main.taht."""
+        current = file_path.parent
+        for _ in range(10):
+            candidate = current / "main.taht"
+            if candidate.exists() and candidate != file_path:
+                return candidate
+            parent = current.parent
+            if parent == current:
+                break
+            current = parent
+        return None
+
+    def parse_document(
+        self, uri: str, source: str,
+    ) -> list[lsp.Diagnostic]:
+        """Parse document and return diagnostics.
+
+        If the file belongs to a project (main.taht found
+        in parent dirs), parse the whole project so that
+        entity references resolve across files.
+        """
+        diagnostics: list[lsp.Diagnostic] = []
 
         try:
-            parser = Parser()
-            game = parser.parse_string(source, uri)
+            game = self._parse_with_project(uri, source)
             self.games[uri] = game
 
-            # Cache entity lookups
             self.entity_dicts[uri] = {
-                "characters": {c.id: c for c in game.characters},
-                "variants": {v.id: v for v in game.variants},
-                "counters": {c.id: c for c in game.counters},
-                "flags": {f.id: f for f in game.flags},
-                "cards": {c.id: c for c in game.cards},
+                "characters": {
+                    c.id: c for c in game.characters
+                },
+                "variants": {
+                    v.id: v for v in game.variants
+                },
+                "counters": {
+                    c.id: c for c in game.counters
+                },
+                "flags": {
+                    f.id: f for f in game.flags
+                },
+                "cards": {
+                    c.id: c for c in game.cards
+                },
             }
 
-            # Build entity location index
             self._index_entities(uri, source, game)
-
-            # Validate references
-            diagnostics.extend(self._validate_references(uri, source, game))
+            diagnostics.extend(
+                self._validate_references(uri, source, game)
+            )
 
         except ParseError as e:
-            # Create diagnostic from parse error
-            line = e.location.line - 1 if e.location else 0
-            diagnostics.append(self._make_diagnostic(line, e.message))
+            line = (
+                e.location.line - 1 if e.location else 0
+            )
+            diagnostics.append(
+                self._make_diagnostic(line, e.message)
+            )
 
         return diagnostics
+
+    def _parse_with_project(
+        self, uri: str, source: str,
+    ) -> Game:
+        """Parse file in project context if possible."""
+        file_path = self._uri_to_path(uri)
+
+        if file_path:
+            main_path = self._find_main_taht(file_path)
+            if main_path:
+                game, result = resolve_imports(
+                    str(main_path),
+                )
+                if result.is_valid:
+                    return game
+
+        parser = Parser()
+        return parser.parse_string(source, uri)
 
     def _index_entities(self, uri: str, source: str, game: Game):
         """Build index of entity locations for go-to-definition."""

@@ -1,0 +1,58 @@
+# Haseki Sultan kartları
+
+Haseki Anne Ziyareti (card:haseki_anne)
+	bearer: character:hasekisultan
+	weight: 0.8
+	require: flag:asiksin
+	lockturn: 12
+	> Sultanım, annemi ziyaret edeceğim. Yanıma 40 deve, 12 araba hediye ve 200 yeniçeri muhafız lazım.
+	* Tabii canım: counter:hazine -15, counter:ordu -5, counter:reaya 5
+	* Biraz abartmadın mı: counter:reaya -5, counter:din -5
+
+Haseki Kedi İstedi (card:haseki_kedi)
+	bearer: character:hasekisultan (variant:memnun)
+	weight: 0.5
+	require: flag:asiksin
+	lockturn: 20
+	> Sultanım, Mısır'dan bir kedi gördüm, çok tatlıydı. Bir tane değil, 47 tane istiyorum.
+	* 47 kedi gelsin: counter:hazine -10, counter:reaya 10
+	* Bir tane yeter: counter:hazine -5
+	* Kedi falan yok: counter:reaya -10
+
+Haseki Kıskanç (card:haseki_kiskanclik)
+	bearer: character:hasekisultan (variant:ofkeli)
+	weight: 0.6
+	require: flag:asiksin, counter:haremziyaret > 15
+	lockturn: 15
+	> Haremi ziyaret ettiğini duydum! Kim o karı?! Sarayı yakarım!
+	* Sadece seni seviyorum: counter:din -5, counter:reaya 5
+	* Padişahım ben, istediğimi yaparım: counter:reaya -10, counter:ordu 5
+
+Haseki Saray İnşası (card:haseki_saray)
+	bearer: character:hasekisultan (variant:kurnaz)
+	weight: 0.4
+	require: flag:asiksin, counter:hazine > 40
+	lockturn: 30
+	> Sultanım, bana özel bir saray yaptır. İçinde kuğulu havuz, altın hamam ve zürafaya bakan balkon olsun.
+	* Zürafaya bakan balkon mu: counter:hazine -20, counter:reaya -5, counter:din -5
+	* Kuğulu havuz yeter: counter:hazine -12
+	* Hayır: counter:reaya -15
+
+Haseki Şehzade Haberi (card:haseki_sehzade)
+	bearer: character:hasekisultan (variant:memnun)
+	weight: 0.3
+	require: flag:asiksin, !flag:evlilik
+	lockturn: dispose
+	> Sultanım, müjde! Şehzadeniz dünyaya geldi! Adını ne koyalım?
+	* Mehmet olsun: counter:sehzade 1, counter:reaya 15, counter:din 10, +flag:evlilik
+	* Süleyman olsun: counter:sehzade 1, counter:reaya 15, counter:din 10, +flag:evlilik
+
+Haseki Valideye Komplo (card:haseki_komplo)
+	bearer: character:hasekisultan (variant:kurnaz)
+	weight: 0.3
+	require: flag:asiksin, flag:evlilik
+	lockturn: 25
+	> Sultanım, valide sultan beni zehirletmeye çalışıyor. Ya o ya ben!
+	* Valideyi sürgüne gönder: counter:din -15, counter:reaya -5
+	* Saçmalama: counter:hazine -10
+	* Araştırayım: counter:hazine -5, counter:ordu -5

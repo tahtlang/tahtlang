@@ -1,0 +1,35 @@
+# Sadrazam kartları
+
+Vergi Teklifi (card:vergi)
+	bearer: character:sadrazam
+	weight: 1.0
+	weight: 2.0 when counter:hazine < 30
+	lockturn: 10
+	> Sultanım, hazinede fare bile kalmadı. Fareler bile taşındı. Vergi toplayalım mı?
+	* Halkı soy: counter:hazine 15, counter:reaya -10
+	* Sadrazamın maaşını kes: counter:hazine 8, counter:ordu -5
+	* Fareler döner: counter:hazine -5
+
+Ticaret Anlaşması (card:ticaret)
+	bearer: character:sadrazam (variant:memnun)
+	weight: 0.8
+	require: !flag:savas
+	lockturn: 15
+	> Venedik elçisi gelmiş. Yanında 300 kilo peynir, 40 varil şarap ve bir de papağan getirmiş. Ticaret anlaşması istiyormuş.
+	* Papağanı al, gerisini gönder: counter:hazine 25, counter:din -10
+	* Peyniri de istemem: counter:din 5, counter:hazine -5
+
+İsyan Haberi (card:isyan_haber)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 1.5
+	require: counter:reaya < 25
+	lockturn: 20
+	> Sultanım, Anadolu'da çiftçiler tırmık ve kazma ile saraya yürüyormuş! Önden bir adam geldi, elinde dilekçe var, üstünde sadece "olmaz olsun" yazıyor.
+	* Tırmıkla mı geliyorlar cidden: counter:ordu -10, +flag:isyan, card:_isyan_sonuc@3
+	* Dilekçeyi kabul et: counter:reaya 10, counter:hazine -5
+
+İsyan Sonucu (card:_isyan_sonuc, ring)
+	bearer: character:yeniceriagasi
+	require: flag:isyan
+	> İsyan bastırıldı sultanım. Çiftçiler tırmıklarını bırakıp eve döndü. Biri kazmasını unutmuş, onu da biz aldık.
+	* Kazma lazım olur: -flag:isyan, counter:reaya -10, counter:ordu -5

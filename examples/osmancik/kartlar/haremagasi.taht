@@ -1,0 +1,23 @@
+# Harem Ağası kartları
+
+Haremde Yeni Kızlar (card:yeni_kizlar)
+	bearer: character:haremagasi
+	weight: 0.8
+	require: counter:reaya > 20
+	lockturn: 10
+	> Sultanım! uzak diyarlardan hareminiz için yeni kızlar getirdik.
+	* Getir getir: counter:haremziyaret 1
+	* Kadınlara vaktim yok: counter:ordu 10
+
+Aşık Oldun (card:asik_oldun)
+	bearer: character:aksakallidede (variant:memnun)
+	weight: 0.5
+	require: counter:haremziyaret > 3, !flag:asiksin
+	> Aşık oldun paşam, yaşıyorsun bu hayatı!
+	* Evet, çok güzel: +flag:asiksin, card:_ask_destan
+	* Ne aşkı, devlet işi var: +flag:asiksin, counter:ordu 5
+
+Aşk Dillere Destan (card:_ask_destan, ring)
+	bearer: character:anlatici
+	> Yaşadığın aşk dillere destan oldu. Reaya size sempati duyuyor.
+	* ...: counter:reaya 10

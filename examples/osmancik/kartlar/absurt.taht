@@ -1,0 +1,62 @@
+# Absürt Olaylar Paketi
+
+Simit Tutulması (card:astronomi_simit)
+	bearer: character:aksakallidede
+	weight: 0.3
+	lockturn: 40
+	> Sultanım, müneccimbaşı yıldızlara bakmış. Yarın güneş doğmayacakmış, yerine susamlı dev bir simit doğacakmış.
+	* Krem peynir hazırlayın: counter:hazine -10, counter:reaya 15, +flag:simit_gunu
+	* Halkı camilere çağırın: counter:din 15, counter:reaya -5
+
+Kurmalı Sadrazam (card:robot_sadrazam)
+	bearer: character:sadrazam (variant:kurnaz)
+	weight: 0.2
+	require: counter:hazine > 60, !flag:metal_sadrazam
+	lockturn: 50
+	> Sultanım, Avrupa'dan kurmalı bir metal adam getirdik. Hiç rüşvet yemiyor, uyumuyor, sadece günde iki litre zeytinyağı ile çalışıyor.
+	* Mevcut sadrazamı kovun: counter:hazine 20, counter:ordu -15, +flag:metal_sadrazam
+	* Çok gürültü çıkarıyor: counter:hazine -5
+
+Kutsal Kedi (card:kutsal_kedi)
+	bearer: character:anlatici
+	weight: 0.4
+	lockturn: 30
+	> Saray kedisi yanlışlıkla mühre basmış. Şeyhülislam bunu "ilahi bir emir" olarak yorumlayıp kediyi vezir ilan etti.
+	* Kediyi besle: counter:reaya 10, counter:din 5, counter:hazine -10
+	* Miyav: counter:ordu 5, counter:reaya -5
+
+Yeniçeri Grevi (card:yeniceri_grev)
+	bearer: character:yeniceriagasi (variant:ofkeli)
+	weight: 0.5
+	require: counter:ordu < 40
+	lockturn: 20
+	> Yeniçeriler yine kazan kaldırdı. Bu sefer brokoli yemeyiz diyorlar. Brokoliyi "yeşil şeytan parmağı" sanıyorlarmış.
+	* Üstüne yoğurt dökün: counter:hazine -10, counter:ordu 10
+	* Brokoliyi yasaklayın: counter:din 10, counter:reaya -5
+
+Uçan Yeniçeriler (card:ucan_yeniceri)
+	bearer: character:yeniceriagasi
+	weight: 0.2
+	require: counter:ordu > 50, counter:hazine > 40, !flag:hava_kuvvetleri
+	lockturn: 60
+	> Hezarfen Ahmet Çelebi, tüm orduya kanat takabileceğini söylüyor. "Viyana'ya havadan ineriz sultanım" diyor.
+	* Hepsine kanat yapın: counter:hazine -30, counter:ordu 25, +flag:hava_kuvvetleri
+	* Uçmak kuşlara mahsustur: counter:din 10, counter:ordu -5
+
+Haseki vs Papağan (card:haseki_papagan)
+	bearer: character:hasekisultan (variant:ofkeli)
+	weight: 0.3
+	require: flag:asiksin
+	lockturn: 25
+	> Sultanım, o Venedik'ten gelen papağan bana "çirkin" dedi! Ya o kuş gider ya ben!
+	* Papağanı azat et: counter:reaya 5, counter:hazine -5
+	* Papağan doğruları söyler: counter:reaya -10, counter:ordu 5
+
+Katarakt Başlangıcı (card:katarakt_olay)
+	bearer: character:aksakallidede
+	weight: 0.1
+	require: counter:yas > 60, !flag:katarakt
+	lockturn: dispose
+	> Sultanım, gözleriniz artık iyi seçmiyor. Sadrazamı bazen papağanla karıştırıyorsunuz.
+	* Gözlük getirtin: counter:hazine -15, counter:reaya 5, +flag:katarakt
+	* Karanlık daha huzurlu: counter:din 10, counter:ordu -10

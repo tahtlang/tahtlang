@@ -1,0 +1,19 @@
+# Şeyhülislâm kartları
+
+Cami İnşası (card:cami_insa)
+	bearer: character:seyhulislam (variant:memnun)
+	weight: 0.7
+	require: counter:hazine > 40
+	lockturn: 20
+	> Sultanım, yeni bir cami yaptıralım. Minaresi o kadar yüksek olsun ki, müezzinin sesi Şam'dan duyulsun.
+	* Şam'dan duyulsun: counter:hazine -15, counter:din 15, counter:cami 1
+	* Müezzin nefes alamaz o yükseklikte: counter:din -5
+
+Fetva (card:fetva)
+	bearer: character:seyhulislam (variant:ofkeli)
+	weight: 0.6
+	require: counter:din < 30
+	lockturn: 15
+	> Sultanım, halk camiye değil kahvehaneye gidiyor! Kahvehanede tavla oynuyorlar, zar atıyorlar, gülüyorlar! Gülmek haram mı bilmem ama şüpheli!
+	* Kahvehaneleri kapat: counter:din 15, counter:reaya -10
+	* Bırak gülsünler: counter:din -5, counter:reaya 5

@@ -1,0 +1,42 @@
+# Soytarı kartları
+
+Yapay Zeka (card:ai_isimizi_elimizden_alacak)
+	bearer: character:soytari
+	weight: 0.4
+	lockturn: dispose
+	require: !flag:ai
+	> Sultanım, yapay zeka işimizi elimizden alacak!
+	* Alsın: +flag:ai
+	* Geri verecek mi?:
+
+Soytarı Şakası (card:soytari_saka)
+	bearer: character:soytari
+	weight: 0.4
+	lockturn: 8
+	> Sultanım, dün gece rüyamda devletiniz battı. Ama endişelenmeyin, rüyamda batmayan tek şey sadrazamın egosu.
+	* Güldüm ama korkuyorum: counter:reaya 5
+	* Rüyanda da kes sesini: counter:reaya -5
+
+Soytarı Dedikodusu (card:soytari_dedikodu)
+	bearer: character:soytari (variant:kurnaz)
+	weight: 0.3
+	lockturn: 15
+	> Sultanım, sadrazam gizlice saray kedisiyle konuşuyormuş. Kedi cevap vermiş mi bilmiyorum ama sadrazam "haklısın" demiş.
+	* Kediyi sorgula: counter:hazine -10, counter:ordu 5
+	* Kedi haklıdır: counter:hazine 5
+
+Soytarı Felsefe (card:soytari_felsefe)
+	bearer: character:soytari (variant:kurnaz)
+	weight: 0.3
+	lockturn: 12
+	> Sultanım, düşündüm de, taht aslında süslü bir sandalye. Ve siz süslü bir sandalyede oturan bir adam. Derin, değil mi?
+	* Derinden derin: counter:reaya 5, counter:din -5
+	* Sandalyeyi kafana atarım: counter:ordu 5, counter:reaya -5
+
+Soytarı Taklit (card:soytari_taklit)
+	bearer: character:soytari (variant:memnun)
+	weight: 0.3
+	lockturn: 20
+	> Sultanım, bakın şeyhülislâmı taklit ediyorum: "HARAM! HARAM! Bu da haram! Gülmek haram! Gülmemek de haram!"
+	* Çok benziyor: counter:din -10, counter:reaya 10
+	* Şeyhülislâm duymasın: counter:din 5

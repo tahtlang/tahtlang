@@ -1,0 +1,16 @@
+# Salgın kartları
+
+Veba Salgını (card:veba)
+	bearer: character:seyhulislam (variant:korkmus)
+	weight: 0.2
+	require: !flag:veba, counter:reaya > 30
+	lockturn: 50
+	> Sultanım, şehirde veba yayılıyor! Soytarı "ben zaten ölüyüm içten içe" dedi, kimse gülmedi.
+	* Karantina, soytarıya da: counter:hazine -12, counter:reaya -5, +flag:veba, card:_veba_sonu@8
+	* Dua ile geçer: counter:din 10, counter:reaya -15, +flag:veba, card:_veba_sonu@12
+
+Veba Sonu (card:_veba_sonu, ring)
+	bearer: character:seyhulislam
+	require: flag:veba
+	> Salgın bitti sultanım. Soytarı hâlâ karantinada, çıkarmayı unuttuk ama şikayet etmiyor.
+	* Çıkarın artık: -flag:veba, counter:din 5

@@ -240,10 +240,11 @@ class TestIndentation:
         with pytest.raises(ParseError, match="Mixed indentation"):
             lex("\t content")
 
-    def test_inconsistent_indent_style(self):
-        """First indented line sets the style, different style raises error."""
-        with pytest.raises(ParseError, match="Inconsistent indentation"):
-            lex("\tfirst\n    second")
+    def test_mixed_styles_across_lines(self):
+        """Tab and space lines can coexist in same file."""
+        lines = lex("\tfirst\n    second")
+        assert lines[0].indent > 0
+        assert lines[1].indent > 0
 
     def test_tabs_consistent(self):
         lines = lex("\tfirst\n\tsecond")

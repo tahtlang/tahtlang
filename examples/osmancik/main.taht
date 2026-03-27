@@ -1,0 +1,111 @@
+# Ayarlar
+Game Settings (settings:main)
+	description: "Osmanlı saray yönetim oyunu"
+	game_over_on_zero: "Devlet çöktü!"
+	game_over_on_max: "Saltanat sona erdi!"
+	starting_flags: flag:start
+
+# Ana kaynaklar
+Hazine (counter:hazine, killer)
+	start: 50
+
+Ordu (counter:ordu, killer)
+	start: 50
+
+Reaya (counter:reaya, killer)
+	start: 50
+
+Din (counter:din, killer)
+	start: 50
+
+Dilek Hakkı (counter:dilek)
+	start: 0
+
+# İmar sayaçları
+Cami (counter:cami, keep)
+	start: 0
+
+Türbe (counter:turbe, keep)
+	start: 0
+
+Mesire Yeri (counter:mesire, keep)
+	start: 0
+
+Harem Ziyaret (counter:haremziyaret)
+	start: 0
+
+Sehzade (counter:sehzade)
+	start: 0
+
+# Virtual counter: toplam imar
+İmar (counter:toplam_imar)
+	source: counter:cami, counter:turbe, counter:mesire
+	aggregate: sum
+
+# Yaş
+Yaşın (counter:yas, keep)
+	start: 18
+
+# Durum flag'leri
+Oyun Başladı (flag:start)
+Savaş Var (flag:savas)
+Verem Salgını Var (flag:verem)
+Veba Salgını Var (flag:veba)
+İsyan Var (flag:isyan)
+Deprem Oldu (flag:deprem)
+Kıtlık Var (flag:kitlik)
+Bolluk Var (flag:bolluk)
+Katarakt Oldun (flag:katarakt)
+Evlisin (flag:evlilik)
+Asiksin (flag:asiksin)
+Orman Cini İle Tanıştın (flag:ormancini)
+Kardeş Kafeste (flag:kardeskafeste)
+Kardeş Uzakta (flag:kardesuzakta)
+Kardeş Meselesi Bitti (flag:kardesbitti)
+Kardeşin Papağanı (flag:kardespapagan)
+Simit Günü (flag:simit_gunu)
+Metal Sadrazam (flag:metal_sadrazam)
+Hava Kuvvetleri (flag:hava_kuvvetleri)
+Yapay Zeka Geldi (flag:ai)
+
+# Savaş cepheleri
+Kuzeyde Savaş Var (flag:kuzeyde_savas)
+Güneyde Savaş Var (flag:guneyde_savas)
+Doğuda Savaş Var (flag:doguda_savas)
+Batıda Savaş Var (flag:batida_savas)
+
+# Karakterler
+Ak Sakallı Dede (character:aksakallidede)
+Sadrazam (character:sadrazam)
+Şeyhülislâm (character:seyhulislam)
+Kaptan-ı Derya (character:kaptaniderya)
+Yeniçeri Ağası (character:yeniceriagasi)
+Valide Sultan (character:validesultan)
+Haseki Sultan (character:hasekisultan)
+Sancak Beyi (character:sancakbeyi)
+Soytarı (character:soytari)
+Orman Cini (character:ormancini)
+Harem Ağası (character:haremagasi)
+Anlatıcı (character:anlatici)
+
+# Varyantlar
+Öfkeli (variant:ofkeli)
+Memnun (variant:memnun)
+Korkmuş (variant:korkmus)
+Kurnaz (variant:kurnaz)
+
+# Kartlar
+import "kartlar/giris.taht"
+import "kartlar/sadrazam.taht"
+import "kartlar/seyhulislam.taht"
+import "kartlar/kaptaniderya.taht"
+import "kartlar/haremagasi.taht"
+import "kartlar/haseki.taht"
+import "kartlar/yeniceri.taht"
+import "kartlar/valide.taht"
+import "kartlar/soytari.taht"
+import "kartlar/ormancini.taht"
+import "kartlar/afetler.taht"
+import "kartlar/salginlar.taht"
+import "kartlar/kardes.taht"
+import "kartlar/absurt.taht"

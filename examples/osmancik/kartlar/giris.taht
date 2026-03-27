@@ -1,0 +1,25 @@
+# Giriş
+
+Tahta Çıkış (card:giris)
+	bearer: character:aksakallidede
+	weight: 100
+	require: flag:start
+	lockturn: dispose
+	> Yeni padişahım, tahtın senindir. Devleti sen yöneteceksin.
+	* Bismillah: -flag:start, card:_oynanis_1
+
+Oynanış 1 (card:_oynanis_1, ring)
+	bearer: character:aksakallidede
+	> Verdiğin kararlar üst tarafta görebileceğin değerleri oynatır.
+	* Anladım: card:_oynanis_2
+
+Oynanış 2 (card:_oynanis_2, ring)
+	bearer: character:aksakallidede
+	> Değerlerden biri sıfıra düşer veya yüze çıkarsa oyun biter.
+	* Anladım: card:_ilk_karar
+
+İlk Karar (card:_ilk_karar, ring)
+	bearer: character:sadrazam
+	> Sultanım, hazine ve ordu dengede. İlk emriniz nedir?
+	* Hazineyi güçlendir: counter:hazine 10, counter:ordu -5
+	* Orduyu güçlendir: counter:ordu 10, counter:hazine -5

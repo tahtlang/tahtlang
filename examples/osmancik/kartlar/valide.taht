@@ -1,0 +1,18 @@
+# Valide Sultan kartları
+
+Valide Nasihat (card:valide_nasihat)
+	bearer: character:validesultan
+	weight: 0.8
+	lockturn: 12
+	> Oğlum, ben senin yaşındayken baban 3 kale fethetmişti. Sen daha saraydan çıkmadın. Hadi en azından bahçeye çık.
+	* Bahçeye çıkayım: counter:reaya 10, counter:hazine -5
+	* Bahçede böcek var: counter:reaya 5
+
+Evlilik Teklifi (card:evlilik)
+	bearer: character:validesultan (variant:memnun)
+	weight: 0.6
+	require: !flag:evlilik
+	lockturn: dispose
+	> Oğlum, sana eş buldum. Kızın babası 7 kale sahibi, kendisi 4 dil biliyor ve güreşte seni yener.
+	* Güreşte yenerse alırım: +flag:evlilik, counter:din 10, counter:reaya 10, counter:hazine -15
+	* Güreş istemem: counter:din -5

@@ -1,0 +1,150 @@
+# Kardeş kartları
+
+Kardeş Meselesi (card:kardes_meselesi)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 1.2
+	require: !flag:kardeskafeste, !flag:kardesuzakta, !flag:kardesbitti
+	lockturn: dispose
+	> Sultanım, kardeşiniz halk tarafından gereğinden fazla seviliyor. Pazarda dolaşıyor, çocuklara şeker dağıtıyor, hatta dün bir de kediye süt vermiş. Halk "keşke o padişah olsa" demeye başladı.
+	* Kafese kapatın: +flag:kardeskafeste, counter:reaya -10, counter:ordu 5
+	* Sancak beyi yap, uzağa gönder: +flag:kardesuzakta, counter:reaya 5, counter:hazine -8
+
+# -- Kafesteki kardeş zinciri --
+
+Kafes Ziyareti (card:kafes_ziyaret)
+	bearer: character:validesultan (variant:ofkeli)
+	weight: 0.7
+	require: flag:kardeskafeste
+	lockturn: 15
+	> Oğlum, kardeşini kafese kapattın! O da benim evladım! Kafeste kitap bile yok, sadece bir güvercin var, güvercinle konuşuyor!
+	* Kitap gönder: counter:din 5, counter:hazine -5
+	* Güvercinle idare etsin: counter:din -10, counter:reaya -5
+
+Kafes Kaçış Planı (card:kafes_kacis)
+	bearer: character:soytari (variant:kurnaz)
+	weight: 0.4
+	require: flag:kardeskafeste
+	lockturn: 20
+	> Sultanım, kafesteki kardeşiniz güvercinle mesaj gönderiyormuş. Güvercin yeniçeri kışlasına uçuyor. Yeniçeriler güvercine "komutanım" demeye başlamış.
+	* Güvercini de kafese koy: counter:ordu 5, counter:reaya -5
+	* Komutan güvercin mi olur: counter:ordu -5
+
+Yeniçeri Kardeşi İster (card:yeniceri_kardes)
+	bearer: character:yeniceriagasi (variant:ofkeli)
+	weight: 0.6
+	require: flag:kardeskafeste, counter:ordu < 35
+	lockturn: 25
+	> Sultanım, yeniçeriler kardeşinizi tahta çıkarmak istiyor! Kafes kapısında 200 yeniçeri bekliyormuş. Güvercin de orada.
+	* Ulufe ver dağılsınlar: counter:hazine -20, counter:ordu 10
+	* Kardeşi serbest bırak, barış: -flag:kardeskafeste, +flag:kardesbitti, counter:reaya 15, counter:ordu -5
+	* Yeniçerileri bastır: counter:ordu -15, card:_kafes_darbe
+
+Kafes Darbe Girişimi (card:_kafes_darbe, ring)
+	bearer: character:yeniceriagasi (variant:korkmus)
+	> Darbe bastırıldı sultanım! Ama kardeşiniz kaçış sırasında kafes kapısına çarpmış, burnu kırılmış. Güvercin de kaçmış.
+	* Burnu iyileşir: counter:ordu -10, counter:reaya -15, +flag:kardesbitti, -flag:kardeskafeste
+
+Kafes Delirmesi (card:kafes_delilik)
+	bearer: character:aksakallidede
+	weight: 0.3
+	require: flag:kardeskafeste
+	lockturn: 30
+	> Sultanım, kafesteki kardeşiniz güvercinle satranç oynamaya başlamış. Ve kaybediyor.
+	* Bari kazansın diye kolay hamle yapsın güvercin: counter:din -5
+	* Güvercini al artık: counter:reaya -5, counter:din 5
+
+# -- Uzaktaki kardeş zinciri --
+
+Sancaktan Haberler (card:sancak_haber)
+	bearer: character:sancakbeyi (variant:korkmus)
+	weight: 0.6
+	require: flag:kardesuzakta
+	lockturn: 15
+	> Sultanım, kardeşiniz sancakta çok seviliyormuş. Kendi adına para bastırmış. Paranın üstünde kendi sureti var ama gülümsüyor. Sizin paralarda hiç gülümsemiyorsunuz.
+	* Ben de gülümserim: counter:reaya 5, counter:din -2
+	* Para bastırmak ne cüret: counter:ordu -5, counter:hazine -8
+
+Kardeş İttifak Kurdu (card:kardes_ittifak)
+	bearer: character:kaptaniderya (variant:korkmus)
+	weight: 0.4
+	require: flag:kardesuzakta
+	lockturn: 25
+	> Sultanım, kardeşiniz Venedik'le ittifak kurmuş! Venedikliler ona 3 gemi, 200 asker ve bir de papağan vermişler. Papağan "kardeşim padişah" diyormuş.
+	* Papağan haklı, ben padişahım: counter:ordu -5, counter:hazine -10, +flag:kardespapagan, [card:_cin_papagan, card:_papagan_normal]
+	* Venedik'e nota gönder: counter:hazine -5, card:_nota_secimi
+
+Kardeş Bağımsızlık İlan Etti (card:kardes_bagimsizlik)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.3
+	require: flag:kardesuzakta, counter:ordu < 40
+	lockturn: 30
+	> Sultanım, kardeşiniz bağımsızlık ilan etmiş! Kendi bayrağını yapmış, üstünde gülen bir yüz var. Manifesto yazmış, tek maddesi: "Abi kötü padişah."
+	* Orduyu gönder: counter:ordu -15, counter:hazine -10, card:_kardes_savas@5
+	* Tanı bağımsızlığını: counter:reaya -15, counter:ordu -5, +flag:kardesbitti, -flag:kardesuzakta
+
+Kardeş Savaşı (card:_kardes_savas, ring)
+	bearer: character:yeniceriagasi
+	require: flag:kardesuzakta
+	> Kardeşinizle savaşıyoruz sultanım! Kardeşiniz ön safta, elinde kılıç yerine bayrak var. Bayrakta hâlâ gülen yüz.
+	* Bayrağı alın: counter:ordu -8, [card:_kardes_yenildi, card:_kardes_kazandi]
+	* Müzakere et: counter:hazine -15, +flag:kardesbitti, -flag:kardesuzakta
+
+Kardeş Yenildi (card:_kardes_yenildi, ring)
+	bearer: character:yeniceriagasi (variant:memnun)
+	require: counter:ordu > 20
+	> Kardeşiniz yakalandı sultanım! Teslim olurken "en azından papağanım kaldı" demiş. Papağan da kaçmış.
+	* Kafese koy: +flag:kardeskafeste, -flag:kardesuzakta, counter:ordu -5
+	* Affet, sürgüne gönder: -flag:kardesuzakta, +flag:kardesbitti, counter:reaya 10, counter:din 8
+
+Kardeş Kazandı (card:_kardes_kazandi, ring)
+	bearer: character:sadrazam (variant:korkmus)
+	require: counter:ordu <= 20
+	> Kaybettik sultanım. Ama kardeşiniz mesaj göndermiş: "Abi barış yapalım, ben burada kalayım, sen orada kal. Papağanı geri aldım, sana selam söylüyor."
+	* Papağana selamımı ilet: -flag:kardesuzakta, +flag:kardesbitti, counter:ordu -10, counter:hazine -8, counter:reaya -8
+
+Nota Seçimi (card:_nota_secimi, ring)
+	bearer: character:sadrazam
+	> Sultanım, Venedik'e hangi notayı gönderelim?
+	* Do: counter:ordu 5
+	* Re: counter:reaya 5
+
+# Cin dileği: kardeş papağana dönüştü
+Cin Papağan Dileği (card:_cin_papagan, ring)
+	bearer: character:ormancini
+	require: counter:dilek > 0
+	> Cin belirdi! "Dileğin gerçekleşti! Kardeşini papağana çevirdim. Artık uçabilir, konuşabilir ve fıstık yiyebilir. Rica ederim."
+	* ...: counter:dilek -1
+
+Papağan Dileği Yok (card:_papagan_normal, ring)
+	> Papağan omzunuza kondu ve "padişahım" dedi. Tuhaf bir kuş.
+	* Tuhaf:
+
+# Kardeş papağana dönüştü — uzaktaysa uçarak gelir
+Papağan Kardeş Döndü (card:papagan_dondu)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.5
+	require: flag:kardespapagan, flag:kardesuzakta
+	lockturn: 20
+	> Sultanım, kardeşiniz papağan formunda Venedik'ten uçarak gelmiş! Saray avlusuna kondu, "abi açım" diye bağırıyor.
+	* Kafese koy: +flag:kardeskafeste, -flag:kardesuzakta, counter:ordu 5
+	* Yem ver, serbest bırak: -flag:kardesuzakta, counter:reaya 5
+
+# Kardeş papağana dönüştü — kafesteyse uçarak kaçar
+Papağan Kardeş Kaçtı (card:papagan_kacti)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.5
+	require: flag:kardespapagan, flag:kardeskafeste
+	lockturn: 20
+	> Sultanım, kardeşiniz kafes parmaklıklarının arasından sıyrılmış! Papağan olmanın avantajı, kafesler insana göre tasarlanmış. Pencereden uçtu gitti.
+	* Arkasından şahin gönderin: counter:ordu -5, -flag:kardeskafeste, +flag:kardesuzakta
+	* Uçsun gitsin: -flag:kardeskafeste, +flag:kardesuzakta, counter:reaya -5
+
+# Kardeş papağan — ne kafeste ne uzakta, sarayda serbest dolaşıyor
+Papağan Pencerede (card:papagan_pencere)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.4
+	require: flag:kardespapagan, !flag:kardeskafeste, !flag:kardesuzakta, !flag:kardesbitti
+	lockturn: 15
+	> Sultanım, kardeşiniz papağan formunda sarayın penceresine konmuş, "ben sultan olacağım" diye bağırıyor. Halk toplanmış dinliyor.
+	* Pompalı ile vur: counter:din -10, counter:reaya -5, -flag:kardespapagan
+	* Yem ver: counter:hazine -5, counter:reaya 10

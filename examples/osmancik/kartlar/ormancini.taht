@@ -1,0 +1,28 @@
+# Orman Cini kartları
+
+Orman Cini Karşılaşması (card:ormancini_karsilasma)
+	bearer: character:ormancini
+	weight: 0.2
+	require: !flag:ormancini
+	lockturn: dispose
+	> Ormanda yeşil, pırıl pırıl bir yaratık belirdi. "Ben orman ciniyim" dedi. "Sana üç dilek hakkı veriyorum ama hangi dileğinin gerçekleşeceğini bilemeyeceksin."
+	* Kabul: counter:dilek 3, +flag:ormancini
+	* Allah Allah deyip kaç: counter:din 10, +flag:ormancini
+
+Orman Cini Geri Döndü (card:ormancini_geri)
+	bearer: character:ormancini
+	weight: 0.15
+	require: flag:ormancini
+	lockturn: 25
+	> Orman cini yine geldi. Bu sefer ağaçların tepesinde oturuyor ve elinde bir kağıt var. "Vergi beyannameni hazırladım" diyor.
+	* Cin mi vergi beyannamesi mi: counter:hazine 15, counter:din -5
+	* Defol cin: counter:din 10, counter:hazine -10
+
+Orman Cini Teklif (card:ormancini_teklif)
+	bearer: character:ormancini (variant:kurnaz)
+	weight: 0.1
+	require: flag:ormancini
+	lockturn: 30
+	> Orman cini sarayın kapısında. "Sadrazamınız olmak istiyorum" diyor. Yanında referans mektubu var, yazan: diğer orman cinleri.
+	* Kabul, mevcut sadrazamdan iyi olur: counter:hazine 20, counter:din -15
+	* Cin sadrazam olmaz: counter:din 5

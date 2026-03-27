@@ -1,0 +1,31 @@
+# Doğal afet kartları
+
+Deprem (card:deprem)
+	bearer: character:sancakbeyi (variant:korkmus)
+	weight: 0.3
+	require: !flag:deprem
+	lockturn: 40
+	> Sultanım, deprem oldu! Sancak beyinin konağı yıkıldı, ama minare sapasağlam duruyor. Şeyhülislâm bunu mucize ilan etti.
+	* Mucize ya da değil, yardım gönder: counter:hazine -15, counter:reaya 10, +flag:deprem, card:_deprem_sonu@5
+	* Mucizeyse yardıma gerek yok: counter:din 5, counter:reaya -15, +flag:deprem, card:_deprem_sonu@5
+
+Deprem Sonu (card:_deprem_sonu, ring)
+	bearer: character:sancakbeyi
+	require: flag:deprem
+	> Deprem bölgesi toparlanıyor sultanım. Sancak beyi yeni konağını minarenin yanına yaptırdı, güvenli olsun diye.
+	* Mantıklı: -flag:deprem
+
+Kıtlık (card:kitlik)
+	bearer: character:sancakbeyi (variant:korkmus)
+	weight: 0.4
+	require: !flag:kitlik, !flag:bolluk
+	lockturn: 30
+	> Sultanım, kıtlık! Halk o kadar aç ki birisi saray duvarındaki süs kabağını yemeye çalışmış. Kabaklar da tahtadanmış.
+	* Gerçek kabak dağıtın: counter:hazine -12, counter:reaya 8, +flag:kitlik, card:_kitlik_sonu@8
+	* Dışarıdan kabak ithal et: counter:hazine -18, counter:reaya 5, +flag:kitlik, card:_kitlik_sonu@5
+
+Kıtlık Sonu (card:_kitlik_sonu, ring)
+	bearer: character:sancakbeyi (variant:memnun)
+	require: flag:kitlik
+	> Hasat mevsimi geldi sultanım! Bu sefer kabaklar gerçek.
+	* Tahta kabağı da yerine koyun: -flag:kitlik, counter:reaya 5

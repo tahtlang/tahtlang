@@ -1,0 +1,15 @@
+# Kaptan-ı Derya kartları
+
+Deniz Seferi (card:deniz_seferi)
+	bearer: character:kaptaniderya
+	weight: 0.5
+	require: !flag:savas, counter:ordu > 40
+	lockturn: 25
+	> Sultanım, Akdeniz'de bir korsan gemisi yakaladık. Kaptanı kendine "Denizlerin Kedisi" diyor ve gemisinde 14 tane gerçek kedi var.
+	* Kedileri al, korsanı as: counter:ordu -10, counter:hazine -8, card:_deniz_sonuc@5
+	* Denizlerin Kedisi bizi ilgilendirmez: counter:hazine -5, counter:reaya -5
+
+Deniz Seferi Sonucu (card:_deniz_sonuc, ring)
+	bearer: character:kaptaniderya (variant:memnun)
+	> Korsanları dağıttık! Ganimetin içinden altın, baharat ve bir de kafeste papağan çıktı. Papağan "padişahım çok yaşa" diyor ama aksanı çok kötü.
+	* Papağana maaş bağla: counter:hazine 30, counter:ordu 5

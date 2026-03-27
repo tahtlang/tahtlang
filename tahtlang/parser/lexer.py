@@ -110,9 +110,6 @@ class Lexer:
         self.filename = filename
         self.lines = source.splitlines()
         self.pos = 0
-        self.indent_char: Optional[str] = (
-            None  # '\t' or ' ', detected from first indented line
-        )
 
     def __iter__(self) -> Iterator[Line]:
         """Iterate over all lines."""
@@ -131,13 +128,12 @@ class Lexer:
 
     def _check_indent_consistency(self, raw: str, line_number: int):
         """
-        Check that indentation is consistent (all tabs or spaces, not mixed).
-        Raises ParseError if mixed indentation is detected.
+        Check that a single line does not mix tabs and spaces.
+        Tabs and spaces may vary between lines.
         """
         if not raw or raw[0] not in "\t ":
-            return  # No indent on this line
+            return
 
-        # Get the indent portion
         indent_chars = ""
         for ch in raw:
             if ch in "\t ":
@@ -148,30 +144,14 @@ class Lexer:
         if not indent_chars:
             return
 
-        # Check for mixed tabs and spaces in this line's indent
         has_tab = "\t" in indent_chars
         has_space = " " in indent_chars
         if has_tab and has_space:
             from .errors import ParseError
 
             raise ParseError(
-                "Mixed indentation: cannot use both TAB and space "
-                "on the same line",
-                SourceLocation(self.filename, line_number),
-            )
-
-        # Detect indent style from first indented line
-        first_char = indent_chars[0]
-        if self.indent_char is None:
-            self.indent_char = first_char
-        elif self.indent_char != first_char:
-            from .errors import ParseError
-
-            expected = "TAB" if self.indent_char == "\t" else "space"
-            found = "TAB" if first_char == "\t" else "space"
-            raise ParseError(
-                f"Inconsistent indentation: file uses {expected}, "
-                f"but this line uses {found}",
+                "Mixed indentation: cannot mix TAB and"
+                " space on the same line",
                 SourceLocation(self.filename, line_number),
             )
 
