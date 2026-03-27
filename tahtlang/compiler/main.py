@@ -45,7 +45,7 @@ from tahtlang.runtime.drivers import (
     SimulationDriver,
 )
 
-VERSION = "0.4.2"
+VERSION = "0.5.0"
 
 
 def print_banner(command_name: str):

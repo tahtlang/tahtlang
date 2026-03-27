@@ -218,18 +218,14 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 ```
 
-## Included example
-
-[`examples/manager.taht`](examples/manager.taht) is a 64-card Ottoman palace management game with:
-- 12 characters (Sadrazam, Soytari, Sehzade, Orman Cini...)
-- War system with branching battles
-- Brother rivalry chain (imprisonment, exile, independence)
-- A genie who grants 3 wishes — but you won't know which ones come true
-- A brother who may or may not get turned into a parrot
+## Examples
 
 ```bash
-tahtlang examples/manager.taht
+tahtlang init                       # scaffold a starter game
+tahtlang examples/minimal.taht     # play the included demo
 ```
+
+[`examples/minimal.taht`](examples/minimal.taht) is a small playable kingdom game. [`examples/tutorial.taht`](examples/tutorial.taht) has annotated explanations of every feature.
 
 ## Full documentation
 

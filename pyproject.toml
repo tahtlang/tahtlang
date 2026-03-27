@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tahtlang"
-version = "0.4.2"
+version = "0.5.0"
 description = "A DSL for creating Reigns-style card games"
 readme = "README.md"
 license = {text = "MIT"}
