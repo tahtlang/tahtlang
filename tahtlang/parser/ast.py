@@ -307,6 +307,7 @@ class Character:
     id: str
     name: str
     prompt: str = ""
+    meta: tuple[tuple[str, str], ...] = ()
     loc: Optional[SourceLocation] = None
 
 
@@ -342,6 +343,7 @@ class Card:
     lockturn: Lockturn = None
     choices: tuple[Choice, ...] = ()
     ring: bool = False  # if True, chain-only card (queue'dan gelir)
+    meta: tuple[tuple[str, str], ...] = ()
     loc: Optional[SourceLocation] = None
 
 

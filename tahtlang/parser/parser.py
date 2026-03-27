@@ -325,12 +325,17 @@ class Parser:
 
     def _parse_character(self, name: str, entity_id: str, header: Line):
         """Parse a character entity."""
-        props = self._collect_properties(valid_keys=self.CHARACTER_KEYS)
+        props = self._collect_properties(
+            valid_keys=self.CHARACTER_KEYS,
+            allow_meta=True,
+        )
+        meta = self._extract_meta(props)
 
         character = Character(
             id=entity_id,
             name=name,
             prompt=self._strip_quotes(props.get("prompt", "")),
+            meta=meta,
             loc=self._make_loc(header),
         )
         self._characters.append(character)
@@ -345,6 +350,7 @@ class Parser:
         weights: list[Weight] = []
         lockturn: Lockturn = None
         choices: list[Choice] = []
+        meta: list[tuple[str, str]] = []
 
         while not self._eof():
             line = self._current()
@@ -368,14 +374,25 @@ class Parser:
                 continue
 
             if line.type == LineType.PROPERTY:
-                bearer, require, weights, lockturn = self._parse_card_property(
-                    line, bearer, require, weights, lockturn
-                )
+                key = line.key or ""
+                if key.startswith("meta."):
+                    meta_key = key[5:]
+                    meta_val = line.value or ""
+                    meta.append((meta_key, meta_val))
+                else:
+                    bearer, require, weights, lockturn = (
+                        self._parse_card_property(
+                            line, bearer, require,
+                            weights, lockturn,
+                        )
+                    )
                 self._advance()
                 continue
 
             if line.type == LineType.INDENTED:
-                weight = self._parse_weight_line(line.value or "", line)
+                weight = self._parse_weight_line(
+                    line.value or "", line,
+                )
                 if weight:
                     weights.append(weight)
                 self._advance()
@@ -393,6 +410,7 @@ class Parser:
             lockturn=lockturn,
             choices=tuple(choices),
             ring=Modifier.RING in modifiers,
+            meta=tuple(meta),
             loc=self._make_loc(header),
         )
         self._cards.append(card)
@@ -890,12 +908,15 @@ class Parser:
         self,
         primary_key: str = "_primary",
         valid_keys: Optional[set[str]] = None,
+        allow_meta: bool = False,
     ) -> dict[str, str]:
         """
         Collect all property lines until next entity or special line.
 
         The `> value` syntax sets the primary_key field.
         If valid_keys is given, raises error on unknown property keys.
+        If allow_meta is True, keys starting with 'meta.' are
+        accepted regardless of valid_keys.
         """
         props = {}
 
@@ -913,8 +934,19 @@ class Parser:
                 continue
 
             if line.type == LineType.PROPERTY and line.key:
-                if valid_keys is not None and line.key not in valid_keys:
-                    raise self._error(f"Unknown property: '{line.key}'", line)
+                is_meta = (
+                    allow_meta
+                    and line.key.startswith("meta.")
+                )
+                if (
+                    not is_meta
+                    and valid_keys is not None
+                    and line.key not in valid_keys
+                ):
+                    raise self._error(
+                        f"Unknown property: '{line.key}'",
+                        line,
+                    )
                 props[line.key] = line.value or ""
                 self._advance()
                 continue
@@ -926,6 +958,21 @@ class Parser:
             break
 
         return props
+
+    @staticmethod
+    def _extract_meta(
+        props: dict[str, str],
+    ) -> tuple[tuple[str, str], ...]:
+        """Extract meta.* keys from props dict.
+
+        Returns tuple of (key, value) pairs with 'meta.'
+        prefix stripped.
+        """
+        meta = []
+        for key in list(props):
+            if key.startswith("meta."):
+                meta.append((key[5:], props.pop(key)))
+        return tuple(meta)
 
     # =========================================================================
     # Navigation helpers
