@@ -3,6 +3,7 @@
 
 # Settings
 Game Settings (settings:main)
+	starting_flags: [flag:start]
 
 # Counters (hitting 0 or 100 ends the game)
 Treasury (counter:treasury, killer)

@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 """
-TahtLang Compiler CLI
-
-Usage:
-    python -m compiler game.taht              # Output to stdout
-    python -m compiler game.taht -o game.json # Output to file
-    python -m compiler game.taht --validate   # Only validate, no output
+TahtLang CLI - Unified entry point for play, compile, and stats.
 """
 
 import argparse
 import json
 import sys
+from typing import Optional
 
 from tahtlang.parser import ParseError
 from tahtlang.parser.ast import (
@@ -33,27 +29,28 @@ from tahtlang.parser.ast import (
 )
 from tahtlang.parser.validator import (
     resolve_imports,
-)
-from tahtlang.parser.validator import (
     validate_game as validate_game_semantics,
 )
 
+VERSION = "0.2.0"
+
+
+def print_banner(command_name: str):
+    """Print a stylish banner for the CLI."""
+    print(f"\n{'='*60}")
+    print(f" TAHTLANG v{VERSION} | {command_name.upper()}")
+    print(f"{'='*60}")
+
 
 def value_to_dict(val):
-    """Convert ValueOrRange to a JSON-serializable dict."""
     if isinstance(val, FixedValue):
         return {"type": "fixed", "value": val.value}
     elif isinstance(val, RangeValue):
-        return {
-            "type": "range",
-            "min": val.min_value,
-            "max": val.max_value,
-        }
+        return {"type": "range", "min": val.min_value, "max": val.max_value}
     raise ValueError(f"Unknown value type: {type(val)}")
 
 
 def command_to_dict(cmd) -> dict:
-    """Convert Command to a JSON-serializable dict."""
     if isinstance(cmd, CounterMod):
         return {
             "type": "counter_mod",
@@ -69,11 +66,7 @@ def command_to_dict(cmd) -> dict:
     if isinstance(cmd, CardBranch):
         return {"type": "card_branch", "cards": list(cmd.card_ids)}
     if isinstance(cmd, CardTimed):
-        return {
-            "type": "card_timed",
-            "card": cmd.card_id,
-            "delay": cmd.delay,
-        }
+        return {"type": "card_timed", "card": cmd.card_id, "delay": cmd.delay}
     if isinstance(cmd, Trigger):
         return {
             "type": "trigger",
@@ -84,13 +77,8 @@ def command_to_dict(cmd) -> dict:
 
 
 def condition_to_dict(cond) -> dict:
-    """Convert Condition to a JSON-serializable dict."""
     if isinstance(cond, FlagCondition):
-        return {
-            "type": "flag",
-            "flag": cond.flag_id,
-            "negated": cond.negated,
-        }
+        return {"type": "flag", "flag": cond.flag_id, "negated": cond.negated}
     if isinstance(cond, CounterCondition):
         return {
             "type": "counter",
@@ -102,7 +90,6 @@ def condition_to_dict(cond) -> dict:
 
 
 def choice_to_dict(choice: Choice) -> dict:
-    """Convert Choice to a JSON-serializable dict."""
     return {
         "label": choice.label,
         "commands": [command_to_dict(c) for c in choice.commands],
@@ -110,7 +97,6 @@ def choice_to_dict(choice: Choice) -> dict:
 
 
 def weight_to_dict(w: Weight) -> dict:
-    """Convert Weight to a JSON-serializable dict."""
     d = {"value": w.value}
     if w.condition:
         d["condition"] = condition_to_dict(w.condition)
@@ -118,16 +104,27 @@ def weight_to_dict(w: Weight) -> dict:
 
 
 def bearer_to_dict(b: Bearer) -> dict:
-    """Convert Bearer to a JSON-serializable dict."""
     d = {"character": b.character_id}
     if b.variant_id:
         d["variant"] = b.variant_id
     return d
 
 
+def character_to_dict(c) -> dict:
+    d = {"id": c.id, "name": c.name, "prompt": c.prompt}
+    if c.meta:
+        d["meta"] = meta_to_dict(c.meta)
+    return d
+
+
+def meta_to_dict(
+    meta: tuple[tuple[str, str], ...],
+) -> dict:
+    return {k: v for k, v in meta}
+
+
 def card_to_dict(c: Card) -> dict:
-    """Convert Card to a JSON-serializable dict."""
-    return {
+    d = {
         "id": c.id,
         "name": c.name,
         "bearer": bearer_to_dict(c.bearer) if c.bearer else None,
@@ -138,11 +135,12 @@ def card_to_dict(c: Card) -> dict:
         "ring": c.ring,
         "choices": [choice_to_dict(ch) for ch in c.choices],
     }
+    if c.meta:
+        d["meta"] = meta_to_dict(c.meta)
+    return d
 
 
 def game_to_dict(game: Game) -> dict:
-    """Convert Game AST to a JSON-serializable dict."""
-    # Build settings
     settings_dict = {}
     if game.settings:
         settings_dict = {
@@ -164,7 +162,6 @@ def game_to_dict(game: Game) -> dict:
                 "color": c.color,
                 "killer": c.killer,
                 "keep": c.keep,
-                # Virtual counter fields
                 "source": list(c.source) if c.source else None,
                 "aggregate": c.aggregate.name.lower() if c.aggregate else None,
                 "track": c.track.name.lower() if c.track else None,
@@ -172,96 +169,181 @@ def game_to_dict(game: Game) -> dict:
             for c in game.counters
         },
         "flags": {
-            f.id: {
-                "id": f.id,
-                "name": f.name,
-                "bind": f.bind,
-                "keep": f.keep,
-            }
+            f.id: {"id": f.id, "name": f.name, "bind": f.bind, "keep": f.keep}
             for f in game.flags
         },
         "variants": {
-            v.id: {
-                "id": v.id,
-                "name": v.name,
-                "prompt": v.prompt,
-            }
+            v.id: {"id": v.id, "name": v.name, "prompt": v.prompt}
             for v in game.variants
         },
         "characters": {
-            c.id: {
-                "id": c.id,
-                "name": c.name,
-                "prompt": c.prompt,
-            }
+            c.id: character_to_dict(c)
             for c in game.characters
         },
         "cards": {c.id: card_to_dict(c) for c in game.cards},
     }
 
 
-def main():
-    arg_parser = argparse.ArgumentParser(
-        description="TahtLang Compiler - compiles .taht files to JSON"
-    )
-    arg_parser.add_argument("input", help="Input .taht file")
-    arg_parser.add_argument("-o", "--output", help="Output JSON file")
-    arg_parser.add_argument(
-        "--validate", action="store_true", help="Validate only, no output"
-    )
-    arg_parser.add_argument(
-        "--pretty", action="store_true", help="Pretty-print JSON (default)"
-    )
-    arg_parser.add_argument(
-        "--compact", action="store_true", help="Compact JSON"
-    )
-
-    args = arg_parser.parse_args()
-
-    # Parse with import resolution
+def load_game(filepath: str) -> Game:
+    """Helper to parse and validate a game file."""
     try:
-        game, import_result = resolve_imports(args.input)
+        game, import_result = resolve_imports(filepath)
         if not import_result.is_valid:
-            print("Import errors:", file=sys.stderr)
+            print("\n[!] Import Resolution Failed:", file=sys.stderr)
             for err in import_result.errors:
-                print(f"  {err}", file=sys.stderr)
+                print(f"  - {err}", file=sys.stderr)
             sys.exit(1)
+        
         result = validate_game_semantics(game)
-
-    except ParseError as e:
-        print(f"Parse error: {e}", file=sys.stderr)
-        sys.exit(1)
-    except FileNotFoundError as e:
-        print(f"File not found: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    # Validate
-    if not result.is_valid:
-        print("Validation errors:", file=sys.stderr)
-        for err in result.errors:
-            print(f"  {err}", file=sys.stderr)
+        if not result.is_valid:
+            print("\n[!] Validation Failed:", file=sys.stderr)
+            for err in result.errors:
+                print(f"  - {err}", file=sys.stderr)
+            sys.exit(1)
+            
+        return game
+    except (ParseError, FileNotFoundError) as e:
+        print(f"\n[!] Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    if args.validate:
-        print("OK Validation passed")
-        print(f"  {len(game.cards)} cards")
-        print(f"  {len(game.characters)} characters")
-        print(f"  {len(game.counters)} counters")
-        print(f"  {len(game.flags)} flags")
-        sys.exit(0)
 
-    # Convert to JSON
+def cmd_play(args):
+    print_banner("Interactive Mode")
+    game = load_game(args.input)
+    from tahtlang.runtime.drivers import InteractiveDriver
+
+    driver = InteractiveDriver(game)
+    try:
+        driver.play()
+    except KeyboardInterrupt:
+        print("\n\nExiting game... See you next time, Your Majesty!")
+
+
+def cmd_compile(args):
+    print_banner("Compiler")
+    game = load_game(args.input)
+    
+    print(f"[*] Processing entities from '{args.input}'...")
+    print(f"  - Cards: {len(game.cards)}")
+    print(f"  - Characters: {len(game.characters)}")
+    print(f"  - Counters: {len(game.counters)}")
+    print(f"  - Flags: {len(game.flags)}")
+
     data = game_to_dict(game)
     indent = None if args.compact else 2
     json_str = json.dumps(data, ensure_ascii=False, indent=indent)
 
-    # Output
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             f.write(json_str)
-        print(f"OK Written to {args.output}")
+        print(f"\n[OK] Successfully compiled to: {args.output}")
     else:
-        print(json_str)
+        print("\n" + json_str)
+
+
+def cmd_stats(args):
+    print_banner("Balancing Analysis")
+    game = load_game(args.input)
+    
+    from tahtlang.runtime.drivers import SimulationDriver
+    driver = SimulationDriver(game)
+    runs = args.runs if args.runs is not None else 100
+    
+    print(f"[*] Running {runs} automated simulations... (Patience, Your Majesty)")
+    report = driver.run_simulations(count=runs)
+    counts = report["card_counts"]
+
+    print("\n[1] GAME OVER SUMMARY")
+    print("-" * 30)
+    # Sort reasons by count descending to show the "top killers" first
+    reasons = report["game_over_reasons"].items()
+    sorted_reasons = sorted(
+        reasons, key=lambda x: x[1], reverse=True,
+    )
+    for reason, count in sorted_reasons:
+        percent = (count / runs) * 100
+        print(f" {reason:<22} | {count:>3} ({percent:>4.1f}%)")
+    
+    print(f"\n[*] Average game duration: {report['avg_turns']:.1f} turns")
+
+    print("\n[2] CARD FREQUENCY ANALYSIS")
+    print("-" * 50)
+    sorted_counts = sorted(
+        counts.items(), key=lambda x: x[1], reverse=True,
+    )
+    print(f"{'Card ID':<30} | {'Total Hits':<10} | {'Hits/Run'}")
+    print("-" * 50)
+    for card_id, count in sorted_counts:
+        avg_hits = count / runs
+        print(f"{card_id:<30} | {count:<10} | {avg_hits:>7.2f}")
+
+    zero_cards = [cid for cid, c in counts.items() if c == 0]
+    if zero_cards:
+        print("\n[!] UNREACHABLE CONTENT ALERT")
+        print("The following cards were never shown"
+              " during the simulation:")
+        for cid in zero_cards:
+            print(f"  - {cid}")
+        print("\n[Hint] Check if their 'require:' conditions are too strict.")
+    print("\n" + "="*60 + "\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="TahtLang CLI - A domain-specific language for Reigns-style card games.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  tahtlang game.taht              # Play the game in your terminal
+  tahtlang stats game.taht        # Run 100 simulations and see card frequency
+  tahtlang compile game.taht      # Compile to JSON for your game engine
+  tahtlang stats game.taht --runs 500  # Run more simulations for better balancing
+
+Documentation:
+  https://github.com/tahtlang/tahtlang
+"""
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # tahtlang compile <input> [-o output]
+    comp_p = subparsers.add_parser("compile", help="Compile .taht files into a JSON game data")
+    comp_p.add_argument("input", help="The source .taht file to compile")
+    comp_p.add_argument("-o", "--output", help="Save the JSON output to a specific file")
+    comp_p.add_argument("--compact", action="store_true", help="Minimize the JSON output size")
+    comp_p.set_defaults(func=cmd_compile)
+
+    # tahtlang stats <input> [--runs N]
+    stats_p = subparsers.add_parser("stats", help="Run automated simulations to test game balance")
+    stats_p.add_argument("input", help="The .taht file to analyze")
+    stats_p.add_argument(
+        "--runs", type=int, default=100, help="How many times to simulate the game (default: 100)"
+    )
+    stats_p.set_defaults(func=cmd_stats)
+
+    # tahtlang play <input> (or just tahtlang <input>)
+    play_p = subparsers.add_parser("play", help="Play the game directly in the terminal")
+    play_p.add_argument("input", help="The .taht file to play")
+    play_p.set_defaults(func=cmd_play)
+
+    # If no arguments at all, print a custom welcoming help
+    if len(sys.argv) == 1:
+        print_banner("Welcome")
+        parser.print_help()
+        sys.exit(0)
+
+    # If first argument is not a command, it's an implicit 'play' command
+    args = sys.argv[1:]
+    if args and args[0] not in ["compile", "stats", "play", "-h", "--help"]:
+        # Insert 'play' as the first argument if it's likely a filename
+        if not args[0].startswith("-"):
+            args.insert(0, "play")
+
+    parsed_args = parser.parse_args(args)
+
+    if hasattr(parsed_args, "func"):
+        parsed_args.func(parsed_args)
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
