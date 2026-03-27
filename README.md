@@ -1,217 +1,202 @@
 # TahtLang
 
-A domain-specific language for creating Reigns-style card games.
+Write card games in plain text. Play them in the terminal. Export to JSON for Unity, Godot, or your own engine.
 
-> "Taht" means "throne" in Turkish.
+> *"Taht"* means *"throne"* in Turkish.
 
-## What is TahtLang?
+<!-- TODO: Add a GIF/screenshot of `tahtlang play` here -->
 
-TahtLang is a text format for defining card game content. Instead of
-JSON or visual editors, you write `.taht` files that are easy to read,
-version control, and edit with any text editor.
+## Why?
 
-```taht
-# Define your game elements
-Hazine (counter:hazine, killer)
-Ordu (counter:ordu, killer)
-Winter (flag:winter)
-Vezir (character:vezir)
+If you've played [Reigns](https://reignsgame.com/reigns/), you know the format: a character shows up, says something, you pick left or right. Four stats go up and down. You die. You try again.
 
-# Define cards
-Tax Collection (card:tax-collection)
-    bearer: character:vezir
-    weight: 1.0
-    weight: 2.0 when counter:hazine < 30
-    require: !flag:winter
-    lockturn: 10
-    > My Sultan, the treasury is running low.
-    * Raise taxes: counter:hazine 20, counter:halk -15
-    * Wait: counter:hazine -5
-```
+The game logic isn't complex. The content is. A Reigns-style game needs hundreds of cards with interconnected conditions, branching storylines, and careful stat balancing. Managing all that in JSON, a spreadsheet, or a visual editor is painful.
 
-## Features
-
-- **Three CLI modes**: `play` (interactive terminal UI), `compile`
-  (JSON export), `stats` (automated balance testing)
-- **Conditional weights**: Cards appear more often based on game state
-- **Card chains**: Queue, schedule, and branch cards for story arcs
-- **Metadata**: Attach arbitrary key-value data to cards and characters
-  for your runtime (images, sounds, moods — anything)
-- **Imports**: Split large games across multiple `.taht` files
-- **Virtual counters**: Aggregate or track other counters/characters
-- **Vim-friendly syntax**: Line-based editing (`dd`, `yy`, `p`)
-- **Type prefixes**: Explicit references (`counter:`, `flag:`, `card:`)
-  for autocomplete and go-to-definition
-- **Tree-sitter grammar**: Syntax highlighting for any editor
-- **LSP server**: Real-time diagnostics, completion, hover,
-  go-to-definition
-- **Validator**: Catches undefined references, unreachable cards,
-  circular dependencies, and deadlock conditions before runtime
-
-## Installation
-
-```bash
-pip install -e .
-```
-
-### Tree-sitter Grammar (optional, for syntax highlighting)
-
-```bash
-cd grammar
-npm install
-npx tree-sitter generate
-```
-
-## Usage
-
-### Play a game in the terminal
-
-```bash
-tahtlang examples/minimal.taht
-# or explicitly:
-tahtlang play examples/minimal.taht
-```
-
-Ncurses-based UI with counter bars, card text, choice selection,
-and game state panel. Arrow keys to navigate, Enter to select,
-`q` to quit.
-
-### Compile to JSON
-
-```bash
-tahtlang compile game.taht -o game.json
-tahtlang compile game.taht --compact    # minified
-```
-
-Exports the full game (settings, counters, flags, characters, cards)
-as JSON for your game engine (Unity, Godot, Defold, web, etc.).
-
-### Balance testing
-
-```bash
-tahtlang stats game.taht              # 100 simulations
-tahtlang stats game.taht --runs 500   # more runs
-```
-
-Runs automated simulations with random choices and reports:
-- Game over causes and their frequency
-- Average game duration
-- Card frequency (how often each card appears)
-- Unreachable content alerts (cards never shown)
-
-### Validate
-
-```bash
-tahtlang compile game.taht > /dev/null
-```
-
-Validation runs automatically before play, compile, or stats.
-Errors are reported with file and line number.
-
-### Start LSP server
-
-```bash
-python -m tahtlang.lsp
-```
-
-## Language Overview
-
-See [Syntax Reference](docs/spec/syntax.md) for the complete
-specification. Quick summary:
-
-### Entities
-
-```taht
-Game Settings (settings:main)
-    starting_flags: [flag:start]
-
-Treasury (counter:treasury, killer)   # killer = game over at 0 or 100
-Cathedral (counter:cathedral, keep)   # keep = persists across reigns
-
-War Active (flag:war)
-Plague (flag:plague, keep)
-
-Angry (variant:angry)                 # character emotion/state
-
-Advisor (character:advisor)
-    meta.portrait: advisor.png        # free-form metadata
-```
-
-### Cards
+TahtLang is a text format designed for this. You write `.taht` files:
 
 ```taht
 Tax Proposal (card:tax)
-    bearer: character:advisor (variant:worried)
-    weight: 1.0
-    weight: 2.0 when counter:treasury < 30
-    require: !flag:war, counter:people > 20
-    lockturn: 10
-    meta.image: tax_scroll.png
-    > The merchants request lower taxes, Your Majesty.
-    * Lower taxes: counter:treasury -15, counter:people 10
-    * Keep rates: counter:people -5
-    * Raise taxes: counter:treasury 20, counter:people -20, +flag:unrest
+	bearer: character:advisor
+	weight: 1.0
+	weight: 3.0 when counter:treasury < 20
+	lockturn: 10
+	> The merchants request lower taxes, Your Majesty.
+	* Lower taxes: counter:treasury -15, counter:people 10
+	* Raise taxes: counter:treasury 20, counter:people -20
+
+War Declaration (card:war)
+	bearer: character:general
+	weight: 0.5
+	require: !flag:war, counter:army > 40
+	> Enemies threaten our borders!
+	* Go to war: +flag:war, counter:army -10, card:_battle@5
+	* Seek peace: counter:treasury -30
 ```
 
-### Ring cards (story chains)
+Then:
+
+```bash
+tahtlang game.taht           # Play it right now in your terminal
+tahtlang stats game.taht     # Simulate 100 games, find balance issues
+tahtlang compile game.taht   # Export JSON for your game engine
+```
+
+## What you get
+
+**As a game designer**, you get a text format that lets you write cards fast, version control everything with git, and catch mistakes before runtime. The validator tells you when you reference a flag that doesn't exist, a character you never defined, or a card that can never appear.
+
+**As a game developer**, you get a clean JSON export with everything you need: counters, flags, characters, cards, conditions, weights, metadata. Parse it in Unity, Godot, Defold, Love2D, a web app — whatever your engine is.
+
+**As both**, you get `tahtlang stats` which simulates hundreds of games and shows you which cards never appear, which counters cause the most deaths, and how long an average game lasts.
+
+## Quick start
+
+```bash
+pip install tahtlang
+tahtlang init                # Creates game.taht with a playable starter game
+tahtlang game.taht           # Play it
+```
+
+Or grab a binary from [releases](https://github.com/tahtlang/tahtlang/releases) — no Python needed.
+
+## How it works
+
+A `.taht` file defines **entities** and **cards**:
+
+```taht
+# Four stats — hitting 0 or 100 kills you
+Treasury (counter:treasury, killer)
+Army (counter:army, killer)
+People (counter:people, killer)
+Faith (counter:faith, killer)
+
+# Characters present cards
+Advisor (character:advisor)
+General (character:general)
+```
+
+Cards have **weights** (how often they appear), **conditions** (when they can appear), and **choices** (what the player can do):
+
+```taht
+Plague (card:plague)
+	bearer: character:advisor
+	weight: 0.3
+	weight: 2.0 when counter:people > 80
+	require: !flag:plague_active
+	lockturn: 30
+	> A terrible plague spreads through the kingdom.
+	* Quarantine the city: counter:people -20, counter:treasury -10, +flag:plague_active
+	* Pray: counter:faith 15, counter:people -30
+```
+
+Cards can **chain** into story arcs:
 
 ```taht
 Battle (card:_battle, ring)
-    bearer: character:general
-    require: flag:war
-    > The battle rages on!
-    * Attack: counter:army -15, [card:_victory, card:_defeat]
-    * Retreat: -flag:war, counter:army -10
+	bearer: character:general
+	require: flag:war
+	> The battle rages!
+	* Attack: counter:army -15, [card:_victory, card:_defeat]
+	* Retreat: -flag:war, counter:army -5
+
+Victory (card:_victory, ring)
+	require: counter:army > 30
+	> We won!
+	* Celebrate: -flag:war, counter:people 20, counter:treasury 30
+
+Defeat (card:_defeat, ring)
+	require: counter:army <= 30
+	> We lost...
+	* Retreat: -flag:war, counter:army -20, counter:people -15
 ```
 
-Ring cards never appear in the random pool — they only show when
-queued by another card via `card:id`, `card:id@N` (scheduled),
-or `[card:a, card:b]` (branch).
-
-### Metadata
-
-Cards and characters support free-form `meta.*` properties:
+Attach any data your engine needs with **metadata**:
 
 ```taht
 Advisor (character:advisor)
-    meta.portrait: advisor_portrait.png
-    meta.voice: deep
+	meta.portrait: advisor.png
+	meta.voice: deep
 
-Empty Vault (card:_go_vault, ring)
-    meta.image: empty_vault.png
-    meta.mood: dark
-    meta.sound: vault_echo.ogg
-    > The royal vaults echo with emptiness.
-    * ...
+Plague (card:plague)
+	meta.image: plague_city.png
+	meta.sound: coughing.ogg
+	meta.mood: dark
 ```
 
-TahtLang passes metadata through to JSON output without validation.
-Your runtime decides what to do with it.
+TahtLang doesn't care what metadata you attach — it passes it through to JSON for your runtime.
 
-### Imports
+## Balance testing
 
-```taht
-import "characters.taht"
-import "story/chapter1.taht"
+```
+$ tahtlang stats game.taht --runs 500
+
+[1] GAME OVER SUMMARY
+------------------------------
+ Treasury hit 0         | 187 (37.4%)
+ People hit 0           | 143 (28.6%)
+ Army hit 100           |  98 (19.6%)
+ Faith hit 0            |  72 (14.4%)
+
+[*] Average game duration: 24.3 turns
+
+[2] CARD FREQUENCY ANALYSIS
+--------------------------------------------------
+Card ID                        | Total Hits | Hits/Run
+--------------------------------------------------
+tax-proposal                   | 1847       |    3.69
+military-request               | 1203       |    2.41
+plague                         | 423        |    0.85
+_battle                        | 0          |    0.00
+
+[!] UNREACHABLE CONTENT ALERT
+  - _battle
+
+[Hint] Check if their 'require:' conditions are too strict.
 ```
 
-## Editor Support
+## JSON output
+
+```bash
+tahtlang compile game.taht -o game.json
+```
+
+```json
+{
+  "counters": {
+    "treasury": {"id": "treasury", "name": "Treasury", "start": 50, "killer": true}
+  },
+  "cards": {
+    "plague": {
+      "id": "plague",
+      "bearer": {"character": "advisor"},
+      "text": "A terrible plague spreads through the kingdom.",
+      "weights": [{"value": 0.3}, {"value": 2.0, "condition": {"counter": "people", "operator": ">", "value": 80}}],
+      "require": [{"type": "flag", "flag": "plague_active", "negated": true}],
+      "choices": [
+        {"label": "Quarantine the city", "commands": [...]},
+        {"label": "Pray", "commands": [...]}
+      ],
+      "meta": {"image": "plague_city.png", "sound": "coughing.ogg", "mood": "dark"}
+    }
+  }
+}
+```
+
+Parse this in your engine. The structure is stable and documented in the [syntax reference](docs/spec/syntax.md).
+
+## Editor support
+
+TahtLang has a **Tree-sitter grammar** for syntax highlighting and an **LSP server** for diagnostics, completion, and go-to-definition.
 
 ### Neovim
-
-1. Symlink the `vim/` directory:
 
 ```bash
 ln -s /path/to/tahtlang/vim ~/.config/nvim/after
 ```
 
-2. Register the tree-sitter parser:
-
 ```lua
-local parser_config = require(
-  "nvim-treesitter.parsers"
-).get_parser_configs()
-
+-- Tree-sitter parser
+local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
 parser_config.taht = {
   install_info = {
     url = "/path/to/tahtlang/grammar",
@@ -219,11 +204,8 @@ parser_config.taht = {
   },
   filetype = "taht",
 }
-```
 
-3. Add LSP config:
-
-```lua
+-- LSP
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "taht",
   callback = function()
@@ -236,36 +218,39 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 ```
 
-### VS Code
+## Included example
 
-Extension coming soon.
+[`examples/manager.taht`](examples/manager.taht) is a 64-card Ottoman palace management game with:
+- 12 characters (Sadrazam, Soytari, Sehzade, Orman Cini...)
+- War system with branching battles
+- Brother rivalry chain (imprisonment, exile, independence)
+- A genie who grants 3 wishes — but you won't know which ones come true
+- A brother who may or may not get turned into a parrot
 
-## Examples
-
-- [`examples/minimal.taht`](examples/minimal.taht) — Playable minimal
-  game with war storyline
-- [`examples/manager.taht`](examples/manager.taht) — Full game with
-  multiple story arcs
-- [`examples/tutorial.taht`](examples/tutorial.taht) — Annotated
-  tutorial with explanations
-
-## Project Structure
-
+```bash
+tahtlang examples/manager.taht
 ```
-tahtlang/
-├── grammar/               # Tree-sitter grammar
-│   ├── grammar.js
-│   └── queries/           # Syntax highlighting queries
-│
-├── tahtlang/              # Python package
-│   ├── parser/            # Lexer, parser, validator
-│   ├── compiler/          # CLI (play, compile, stats)
-│   ├── runtime/           # Game engine + drivers
-│   └── lsp/               # Language Server Protocol
-│
-├── docs/spec/             # Language specification
-└── examples/              # Example .taht files
+
+## Full documentation
+
+- [Syntax Reference](docs/spec/syntax.md) — complete language specification
+- `tahtlang init` — scaffold a new game
+- `tahtlang --help` — all CLI options
+
+## Install
+
+```bash
+pip install tahtlang
 ```
+
+Or via Homebrew:
+
+```bash
+brew tap tahtlang/tahtlang
+brew install tahtlang
+```
+
+Or grab a binary from [GitHub Releases](https://github.com/tahtlang/tahtlang/releases).
 
 ## License
 
