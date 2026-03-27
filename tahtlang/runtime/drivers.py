@@ -3,10 +3,12 @@ Drivers for TahtLang runtime.
 
 InteractiveDriver: Textual-based terminal UI for playing.
 SimulationDriver: Headless automated simulations for stats.
+AutoplayDriver: Text-based automated playthrough with full output.
 """
 
 import random
-from typing import Dict
+import sys
+from typing import Dict, Optional, TextIO
 
 from ..parser.ast import (
     CardBranch,
@@ -131,3 +133,135 @@ class SimulationDriver:
         self.game_over_reasons[reason] = (
             self.game_over_reasons.get(reason, 0) + 1
         )
+
+
+# ── Autoplay Driver (text-based playthrough) ──
+
+class AutoplayDriver:
+    """
+    Plays a full game automatically, printing each turn's
+    card text, choices, selected choice, and counter state.
+    Output is plain text readable by humans or LLMs.
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        max_turns: int = 200,
+        seed: Optional[int] = None,
+        out: TextIO = sys.stdout,
+    ):
+        self.game = game
+        self.max_turns = max_turns
+        self.out = out
+        if seed is not None:
+            random.seed(seed)
+
+    def _counter_bar(self, engine: GameEngine) -> str:
+        """Format killer counters as a status line."""
+        parts = []
+        for c in self.game.counters:
+            if not c.killer:
+                continue
+            val = engine.state.counters.get(c.id, 0)
+            parts.append(f"{c.name}:{val}")
+        return " | ".join(parts)
+
+    def _format_effects(self, choice: Choice) -> str:
+        """Format choice effects."""
+        if not choice.commands:
+            return "no effect"
+        return ", ".join(
+            _format_command(cmd) for cmd in choice.commands
+        )
+
+    def play(self):
+        engine = GameEngine(self.game)
+        turn = 0
+
+        self.out.write("=" * 60 + "\n")
+        self.out.write(" AUTOPLAY START\n")
+        self.out.write("=" * 60 + "\n\n")
+
+        while (
+            not engine.state.is_game_over
+            and turn < self.max_turns
+        ):
+            card = engine.pick_next_card()
+            if not card:
+                self.out.write(
+                    "\n[!] No cards left in pool.\n"
+                )
+                break
+
+            turn += 1
+
+            # Header
+            self.out.write(f"--- Turn {turn} ---\n")
+            self.out.write(
+                f"[{self._counter_bar(engine)}]\n"
+            )
+
+            # Card info
+            bearer_str = ""
+            if card.bearer:
+                char = self.game.get_character(
+                    card.bearer.character_id,
+                )
+                name = char.name if char else card.bearer.character_id
+                if card.bearer.variant_id:
+                    var = self.game.get_variant(
+                        card.bearer.variant_id,
+                    )
+                    var_name = (
+                        var.name if var
+                        else card.bearer.variant_id
+                    )
+                    bearer_str = f"{name} ({var_name})"
+                else:
+                    bearer_str = name
+
+            if bearer_str:
+                self.out.write(f"{bearer_str}:\n")
+            self.out.write(f'  "{card.text}"\n')
+
+            # Choices
+            if not card.choices:
+                self.out.write("  (no choices)\n")
+                engine.apply_choice(
+                    card, Choice(label=""),
+                )
+            else:
+                for i, ch in enumerate(card.choices):
+                    effects = self._format_effects(ch)
+                    self.out.write(
+                        f"  [{i+1}] {ch.label}"
+                        f"  ({effects})\n"
+                    )
+
+                pick = random.randint(
+                    0, len(card.choices) - 1,
+                )
+                chosen = card.choices[pick]
+                self.out.write(
+                    f"  >>> Pick: [{pick+1}]"
+                    f" {chosen.label}\n"
+                )
+                engine.apply_choice(card, chosen)
+
+            self.out.write("\n")
+
+        # Game over
+        self.out.write("=" * 60 + "\n")
+        if engine.state.is_game_over:
+            self.out.write(
+                f" GAME OVER: {engine.state.game_over_reason}\n"
+            )
+        else:
+            self.out.write(
+                f" {turn} turns played, game did not end.\n"
+            )
+        self.out.write(
+            f"[{self._counter_bar(engine)}]\n"
+        )
+        self.out.write("=" * 60 + "\n")

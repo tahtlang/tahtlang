@@ -57,3 +57,36 @@ jobs:
         with:
           draft: false
           files: tahtlang-*
+
+  update-formula:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Download release binaries and update Formula
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          # Download binaries from the release we just created
+          gh release download "v${VERSION}" \
+            --pattern "tahtlang-macos-arm64" \
+            --pattern "tahtlang-linux-x86_64"
+
+          SHA_MACOS=$(shasum -a 256 tahtlang-macos-arm64 | cut -d ' ' -f 1)
+          SHA_LINUX=$(shasum -a 256 tahtlang-linux-x86_64 | cut -d ' ' -f 1)
+
+          sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/tahtlang.rb
+          sed -i "/macos-arm64/,/sha256/{s/sha256 \".*\"/sha256 \"${SHA_MACOS}\"/}" Formula/tahtlang.rb
+          sed -i "/linux-x86_64/,/sha256/{s/sha256 \".*\"/sha256 \"${SHA_LINUX}\"/}" Formula/tahtlang.rb
+      - name: Commit and push Formula update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/tahtlang.rb
+          git diff --cached --quiet && exit 0
+          git commit -m "Update Formula to v${GITHUB_REF_NAME#v}"
+          git push

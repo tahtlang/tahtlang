@@ -4,9 +4,14 @@ TahtLang CLI - Unified entry point for play, compile, and stats.
 """
 
 import argparse
+import atexit
 import json
 import os
+import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -41,11 +46,12 @@ from tahtlang.parser.validator import (
     validate_game as validate_game_semantics,
 )
 from tahtlang.runtime.drivers import (
+    AutoplayDriver,
     InteractiveDriver,
     SimulationDriver,
 )
 
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 
 
 def print_banner(command_name: str):
@@ -197,8 +203,77 @@ def game_to_dict(game: Game) -> dict:
     }
 
 
+_GITHUB_RE = re.compile(
+    r"^https?://github\.com/([^/]+/[^/]+?)(?:\.git)?/?$"
+)
+
+
+def resolve_input(input_path: str) -> str:
+    """If input is a GitHub URL, clone to a temp dir and
+    return the path to main.taht inside it.
+    Otherwise return the input as-is."""
+    m = _GITHUB_RE.match(input_path)
+    if not m:
+        return input_path
+
+    repo_url = f"https://github.com/{m.group(1)}.git"
+    parent = tempfile.mkdtemp(prefix="tahtlang_")
+    atexit.register(shutil.rmtree, parent, ignore_errors=True)
+    tmp = os.path.join(parent, "repo")
+
+    print(f"[*] Cloning {m.group(1)}...")
+    result = subprocess.run(
+        ["git", "clone", "--depth", "1", repo_url, tmp],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(
+            f"\n[!] Clone failed: {result.stderr.strip()}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Find main.taht — check root then one level deep
+    root = Path(tmp)
+    for candidate in [
+        root / "main.taht",
+        *root.glob("*/main.taht"),
+    ]:
+        if candidate.is_file():
+            print(f"[*] Found {candidate.relative_to(root)}")
+            return str(candidate)
+
+    # No main.taht, look for any .taht file
+    taht_files = list(root.glob("**/*.taht"))
+    if len(taht_files) == 1:
+        print(
+            f"[*] Found {taht_files[0].relative_to(root)}"
+        )
+        return str(taht_files[0])
+
+    if taht_files:
+        print(
+            "\n[!] No main.taht found. Available:",
+            file=sys.stderr,
+        )
+        for f in taht_files:
+            print(
+                f"  - {f.relative_to(root)}",
+                file=sys.stderr,
+            )
+    else:
+        print(
+            "\n[!] No .taht files found in repo.",
+            file=sys.stderr,
+        )
+    sys.exit(1)
+
+
 def load_game(filepath: str) -> Game:
-    """Helper to parse and validate a game file."""
+    """Helper to parse and validate a game file.
+    Accepts a local path or a GitHub URL."""
+    filepath = resolve_input(filepath)
     try:
         game, import_result = resolve_imports(filepath)
         if not import_result.is_valid:
@@ -415,6 +490,16 @@ def cmd_split(args):
 
 
 def cmd_play(args):
+    if getattr(args, "autoplay", False):
+        print_banner("Autoplay")
+        game = load_game(args.input)
+        seed = getattr(args, "seed", None)
+        driver = AutoplayDriver(
+            game, max_turns=200, seed=seed,
+        )
+        driver.play()
+        return
+
     print_banner("Interactive Mode")
     game = load_game(args.input)
     debug = getattr(args, "debug", False)
@@ -456,6 +541,13 @@ def cmd_stats(args):
     driver = SimulationDriver(game)
     runs = args.runs if args.runs is not None else 100
 
+    total_cards = len(game.cards)
+    ring_cards = sum(1 for c in game.cards if c.ring)
+    pool_cards = total_cards - ring_cards
+    print(
+        f"[*] {total_cards} cards"
+        f" ({pool_cards} pool + {ring_cards} ring)"
+    )
     print(
         f"[*] Running {runs} simulations..."
         " (Patience, Your Majesty)"
@@ -573,6 +665,14 @@ Docs: https://github.com/tahtlang/tahtlang
     play_p.add_argument(
         "--debug", action="store_true",
         help="Show debug panels",
+    )
+    play_p.add_argument(
+        "--autoplay", action="store_true",
+        help="Auto-play with random choices (text output)",
+    )
+    play_p.add_argument(
+        "--seed", type=int, default=None,
+        help="Random seed for autoplay reproducibility",
     )
     play_p.set_defaults(func=cmd_play)
 
