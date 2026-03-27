@@ -338,7 +338,8 @@ def cmd_init(args):
 def cmd_play(args):
     print_banner("Interactive Mode")
     game = load_game(args.input)
-    driver = InteractiveDriver(game)
+    debug = getattr(args, "debug", False)
+    driver = InteractiveDriver(game, debug=debug)
     try:
         driver.play()
     except KeyboardInterrupt:
@@ -489,6 +490,10 @@ Docs: https://github.com/tahtlang/tahtlang
     )
     play_p.add_argument(
         "input", help="Source .taht file",
+    )
+    play_p.add_argument(
+        "--debug", action="store_true",
+        help="Show debug panels",
     )
     play_p.set_defaults(func=cmd_play)
 

@@ -27,6 +27,7 @@ requires-python = ">=3.10"
 dependencies = [
     "tree-sitter>=0.21.0",
     "pygls>=1.0.0",
+    "textual>=0.50.0",
 ]
 
 [project.optional-dependencies]
@@ -61,3 +62,5 @@ max-complexity = 10
 "*/migrations/*.py" = ["E501"]
 # lexer imports errors.py which imports ast.py — circular if top-level
 "tahtlang/parser/lexer.py" = ["PLC0415"]
+# lazy import to avoid loading textual for headless use
+"tahtlang/runtime/drivers.py" = ["PLC0415"]
