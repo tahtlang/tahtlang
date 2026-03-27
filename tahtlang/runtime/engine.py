@@ -25,7 +25,6 @@ from ..parser.ast import (
     Game,
     Operator,
     RangeValue,
-    Trigger,
 )
 
 
@@ -175,7 +174,8 @@ class GameEngine:
         if isinstance(cmd, CounterMod):
             val = self._resolve_value(cmd.value)
             current = self.state.counters.get(cmd.counter_id, 0)
-            self.state.counters[cmd.counter_id] = max(0, min(100, current + val))
+            new_val = max(0, min(100, current + val))
+            self.state.counters[cmd.counter_id] = new_val
 
         elif isinstance(cmd, FlagSet):
             self.state.flags.add(cmd.flag_id)

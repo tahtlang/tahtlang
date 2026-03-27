@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 import sys
-from typing import Optional
 
 from tahtlang.parser import ParseError
 from tahtlang.parser.ast import (
@@ -30,7 +29,13 @@ from tahtlang.parser.ast import (
 )
 from tahtlang.parser.validator import (
     resolve_imports,
+)
+from tahtlang.parser.validator import (
     validate_game as validate_game_semantics,
+)
+from tahtlang.runtime.drivers import (
+    InteractiveDriver,
+    SimulationDriver,
 )
 
 VERSION = "0.3.0"
@@ -333,13 +338,14 @@ def cmd_init(args):
 def cmd_play(args):
     print_banner("Interactive Mode")
     game = load_game(args.input)
-    from tahtlang.runtime.drivers import InteractiveDriver
-
     driver = InteractiveDriver(game)
     try:
         driver.play()
     except KeyboardInterrupt:
-        print("\n\nExiting game... See you next time, Your Majesty!")
+        print(
+            "\n\nExiting game..."
+            " See you next time, Your Majesty!"
+        )
 
 
 def cmd_compile(args):
@@ -367,12 +373,13 @@ def cmd_compile(args):
 def cmd_stats(args):
     print_banner("Balancing Analysis")
     game = load_game(args.input)
-    
-    from tahtlang.runtime.drivers import SimulationDriver
     driver = SimulationDriver(game)
     runs = args.runs if args.runs is not None else 100
-    
-    print(f"[*] Running {runs} automated simulations... (Patience, Your Majesty)")
+
+    print(
+        f"[*] Running {runs} simulations..."
+        " (Patience, Your Majesty)"
+    )
     report = driver.run_simulations(count=runs)
     counts = report["card_counts"]
 
@@ -407,24 +414,31 @@ def cmd_stats(args):
               " during the simulation:")
         for cid in zero_cards:
             print(f"  - {cid}")
-        print("\n[Hint] Check if their 'require:' conditions are too strict.")
+        print(
+            "\n[Hint] Check if their 'require:'"
+            " conditions are too strict."
+        )
     print("\n" + "="*60 + "\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="TahtLang CLI - A domain-specific language for Reigns-style card games.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+    desc = (
+        "TahtLang CLI - A DSL for"
+        " Reigns-style card games."
+    )
+    epilog = """\
 Examples:
-  tahtlang game.taht              # Play the game in your terminal
-  tahtlang stats game.taht        # Run 100 simulations and see card frequency
-  tahtlang compile game.taht      # Compile to JSON for your game engine
-  tahtlang stats game.taht --runs 500  # Run more simulations for better balancing
+  tahtlang game.taht           # Play
+  tahtlang init myproject      # Scaffold
+  tahtlang stats game.taht     # Balance test
+  tahtlang compile game.taht   # Export JSON
 
-Documentation:
-  https://github.com/tahtlang/tahtlang
+Docs: https://github.com/tahtlang/tahtlang
 """
+    parser = argparse.ArgumentParser(
+        description=desc,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=epilog,
     )
     subparsers = parser.add_subparsers(
         dest="command", help="Available commands",
@@ -432,8 +446,7 @@ Documentation:
 
     # tahtlang init [name]
     init_p = subparsers.add_parser(
-        "init",
-        help="Create a starter .taht game file",
+        "init", help="Create a starter game",
     )
     init_p.add_argument(
         "name", nargs="?", default="game",
@@ -442,23 +455,41 @@ Documentation:
     init_p.set_defaults(func=cmd_init)
 
     # tahtlang compile <input> [-o output]
-    comp_p = subparsers.add_parser("compile", help="Compile .taht files into a JSON game data")
-    comp_p.add_argument("input", help="The source .taht file to compile")
-    comp_p.add_argument("-o", "--output", help="Save the JSON output to a specific file")
-    comp_p.add_argument("--compact", action="store_true", help="Minimize the JSON output size")
+    comp_p = subparsers.add_parser(
+        "compile", help="Compile to JSON",
+    )
+    comp_p.add_argument(
+        "input", help="Source .taht file",
+    )
+    comp_p.add_argument(
+        "-o", "--output", help="Output file path",
+    )
+    comp_p.add_argument(
+        "--compact", action="store_true",
+        help="Minify JSON output",
+    )
     comp_p.set_defaults(func=cmd_compile)
 
     # tahtlang stats <input> [--runs N]
-    stats_p = subparsers.add_parser("stats", help="Run automated simulations to test game balance")
-    stats_p.add_argument("input", help="The .taht file to analyze")
+    stats_p = subparsers.add_parser(
+        "stats", help="Run balance simulations",
+    )
     stats_p.add_argument(
-        "--runs", type=int, default=100, help="How many times to simulate the game (default: 100)"
+        "input", help="Source .taht file",
+    )
+    stats_p.add_argument(
+        "--runs", type=int, default=100,
+        help="Simulation count (default: 100)",
     )
     stats_p.set_defaults(func=cmd_stats)
 
     # tahtlang play <input> (or just tahtlang <input>)
-    play_p = subparsers.add_parser("play", help="Play the game directly in the terminal")
-    play_p.add_argument("input", help="The .taht file to play")
+    play_p = subparsers.add_parser(
+        "play", help="Play in the terminal",
+    )
+    play_p.add_argument(
+        "input", help="Source .taht file",
+    )
     play_p.set_defaults(func=cmd_play)
 
     # If no arguments at all, print a custom welcoming help
