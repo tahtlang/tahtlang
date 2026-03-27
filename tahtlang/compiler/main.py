@@ -5,6 +5,7 @@ TahtLang CLI - Unified entry point for play, compile, and stats.
 
 import argparse
 import json
+import os
 import sys
 from typing import Optional
 
@@ -207,6 +208,128 @@ def load_game(filepath: str) -> Game:
         sys.exit(1)
 
 
+INIT_TEMPLATE = """\
+# {name}
+# A Reigns-style card game
+
+# Settings
+Game Settings (settings:main)
+\tstarting_flags: [flag:start]
+
+# Counters (hitting 0 or 100 ends the game)
+Treasury (counter:treasury, killer)
+Army (counter:army, killer)
+People (counter:people, killer)
+Church (counter:church, killer)
+
+# Flags
+Game Start (flag:start)
+War Active (flag:war)
+
+# Characters
+Advisor (character:advisor)
+General (character:general)
+Priest (character:priest)
+Merchant (character:merchant)
+
+# Cards
+
+Welcome (card:welcome)
+\tbearer: character:advisor
+\tweight: 100
+\trequire: flag:start
+\tlockturn: dispose
+\t> Welcome to your kingdom, Your Majesty. Your reign begins now.
+\t* I am ready: -flag:start, card:_first_decision
+
+First Decision (card:_first_decision, ring)
+\tbearer: character:advisor
+\t> Your treasury needs attention. What shall we do?
+\t* Raise taxes: counter:treasury 20, counter:people -10
+\t* Cut spending: counter:treasury 10, counter:army -10
+
+Tax Proposal (card:tax-proposal)
+\tbearer: character:merchant
+\tweight: 1.0
+\tweight: 2.0 when counter:treasury < 30
+\tlockturn: 10
+\t> The merchants request lower taxes, Your Majesty.
+\t* Lower taxes: counter:treasury -15, counter:people 10
+\t* Keep current rates: counter:people -5
+
+Military Request (card:military-request)
+\tbearer: character:general
+\tweight: 1.0
+\tlockturn: 8
+\t> We need more soldiers, Your Majesty.
+\t* Recruit more: counter:army 15, counter:treasury -20
+\t* The army is sufficient: counter:army -5
+
+Church Donation (card:church-donation)
+\tbearer: character:priest
+\tweight: 1.0
+\tlockturn: 12
+\t> The church asks for your generous donation.
+\t* Donate generously: counter:church 20, counter:treasury -25
+\t* A modest gift: counter:church 5, counter:treasury -5
+\t* Decline: counter:church -15
+
+War Declaration (card:war-declaration)
+\tbearer: character:general
+\tweight: 0.5
+\trequire: !flag:war, counter:army > 40
+\tlockturn: 30
+\t> A neighboring kingdom threatens our borders!
+\t* Prepare for war: +flag:war, counter:army -10, card:_war_battle@5
+\t* Seek peace: counter:treasury -30, counter:people 10
+
+War Battle (card:_war_battle, ring)
+\tbearer: character:general
+\trequire: flag:war
+\t> The battle rages on. What are your orders?
+\t* Attack: counter:army -20?-10, [card:_war_victory, card:_war_defeat]
+\t* Defend: counter:army -10, card:_war_stalemate
+
+War Victory (card:_war_victory, ring)
+\tbearer: character:general
+\trequire: counter:army > 30
+\t> We have won! The enemy retreats!
+\t* Celebrate: -flag:war, counter:people 20, counter:treasury 30
+
+War Defeat (card:_war_defeat, ring)
+\tbearer: character:general
+\trequire: counter:army <= 30
+\t> We have lost the battle...
+\t* Retreat: -flag:war, counter:army -20, counter:people -15
+
+War Stalemate (card:_war_stalemate, ring)
+\tbearer: character:general
+\t> Neither side gains ground.
+\t* Continue fighting: card:_war_battle@3
+\t* Negotiate peace: -flag:war, counter:treasury -20
+"""
+
+
+def cmd_init(args):
+    name = args.name
+    filename = f"{name}.taht"
+    filepath = os.path.join(os.getcwd(), filename)
+
+    if os.path.exists(filepath):
+        print(f"[!] '{filename}' already exists.", file=sys.stderr)
+        sys.exit(1)
+
+    content = INIT_TEMPLATE.format(name=name)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    print_banner("Init")
+    print(f"[OK] Created '{filename}'")
+    print(f"\n  Play it:   tahtlang {filename}")
+    print(f"  Test it:   tahtlang stats {filename}")
+    print(f"  Compile:   tahtlang compile {filename}")
+
+
 def cmd_play(args):
     print_banner("Interactive Mode")
     game = load_game(args.input)
@@ -303,7 +426,20 @@ Documentation:
   https://github.com/tahtlang/tahtlang
 """
     )
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(
+        dest="command", help="Available commands",
+    )
+
+    # tahtlang init [name]
+    init_p = subparsers.add_parser(
+        "init",
+        help="Create a starter .taht game file",
+    )
+    init_p.add_argument(
+        "name", nargs="?", default="game",
+        help="Project name (default: game)",
+    )
+    init_p.set_defaults(func=cmd_init)
 
     # tahtlang compile <input> [-o output]
     comp_p = subparsers.add_parser("compile", help="Compile .taht files into a JSON game data")
@@ -333,7 +469,8 @@ Documentation:
 
     # If first argument is not a command, it's an implicit 'play' command
     args = sys.argv[1:]
-    if args and args[0] not in ["compile", "stats", "play", "-h", "--help"]:
+    commands = ["init", "compile", "stats", "play", "-h", "--help"]
+    if args and args[0] not in commands:
         # Insert 'play' as the first argument if it's likely a filename
         if not args[0].startswith("-"):
             args.insert(0, "play")
