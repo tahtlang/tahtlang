@@ -1,51 +1,50 @@
 # Ayarlar
 Game Settings (settings:main)
-    description: "Osmanlı saray yönetim oyunu"
-    game_over_on_zero: "Devlet çöktü!"
-    game_over_on_max: "Saltanat sona erdi!"
-    starting_flags: flag:start
+	description: "Osmanlı saray yönetim oyunu"
+	game_over_on_zero: "Devlet çöktü!"
+	game_over_on_max: "Saltanat sona erdi!"
+	starting_flags: flag:start
 
 # Ana kaynaklar
 Hazine (counter:hazine, killer)
-    start: 50
-    icon: "💰"
+	start: 50
 
 Ordu (counter:ordu, killer)
-    start: 50
-    icon: "⚔️"
+	start: 50
 
 Reaya (counter:reaya, killer)
-    start: 50
-    icon: "👥"
+	start: 50
 
 Din (counter:din, killer)
-    start: 50
-    icon: "☪️"
+	start: 50
+
+Dilek Hakkı (counter:dilek)
+	start: 0
 
 # İmar sayaçları
-Toplam Cami (counter:cami, keep)
-    start: 0
+Cami (counter:cami, keep)
+	start: 0
 
-Toplam Türbe (counter:turbe, keep)
-    start: 0
+Türbe (counter:turbe, keep)
+	start: 0
 
-Toplam Mesire Yeri (counter:mesire, keep)
-    start: 0
+Mesire Yeri (counter:mesire, keep)
+	start: 0
 
-Toplam Harem Ziyaret Sayısı (counter:haremziyaret)
-    start: 0
+Harem Ziyaret (counter:haremziyaret)
+	start: 0
 
-Toplam Sehzade (counter:sehzade)
-    start: 0
+Sehzade (counter:sehzade)
+	start: 0
 
 # Virtual counter: toplam imar
-Toplam İmar (counter:toplam_imar)
-    source: counter:cami, counter:turbe, counter:mesire
-    aggregate: sum
+İmar (counter:toplam_imar)
+	source: counter:cami, counter:turbe, counter:mesire
+	aggregate: sum
 
 # Yaş
 Yaşın (counter:yas, keep)
-    start: 18
+	start: 18
 
 # Durum flag'leri
 Oyun Başladı (flag:start)
@@ -63,6 +62,7 @@ Orman Cini İle Tanıştın (flag:ormancini)
 Kardeş Kafeste (flag:kardeskafeste)
 Kardeş Uzakta (flag:kardesuzakta)
 Kardeş Meselesi Bitti (flag:kardesbitti)
+Kardeşin Papağanı (flag:kardespapagan)
 Simit Günü (flag:simit_gunu)
 Metal Sadrazam (flag:metal_sadrazam)
 Hava Kuvvetleri (flag:hava_kuvvetleri)
@@ -100,508 +100,554 @@ Kurnaz (variant:kurnaz)
 # --- Giriş ---
 
 Tahta Çıkış (card:giris)
-    bearer: character:aksakallidede
-    weight: 100
-    require: flag:start
-    lockturn: dispose
-    > Yeni padişahım, tahtın senindir. Devleti sen yöneteceksin.
-    * Bismillah: -flag:start, card:_ilk_karar
+	bearer: character:aksakallidede
+	weight: 100
+	require: flag:start
+	lockturn: dispose
+	> Yeni padişahım, tahtın senindir. Devleti sen yöneteceksin.
+	* Bismillah: -flag:start, card:_ilk_karar
 
 İlk Karar (card:_ilk_karar, ring)
-    bearer: character:sadrazam
-    > Sultanım, hazine ve ordu dengede. İlk emriniz nedir?
-    * Hazineyi güçlendir: counter:hazine 10, counter:ordu -5
-    * Orduyu güçlendir: counter:ordu 10, counter:hazine -5
+	bearer: character:sadrazam
+	> Sultanım, hazine ve ordu dengede. İlk emriniz nedir?
+	* Hazineyi güçlendir: counter:hazine 10, counter:ordu -5
+	* Orduyu güçlendir: counter:ordu 10, counter:hazine -5
 
 # --- Sadrazam kartları ---
 
 Vergi Teklifi (card:vergi)
-    bearer: character:sadrazam
-    weight: 1.0
-    weight: 2.0 when counter:hazine < 30
-    lockturn: 10
-    > Sultanım, hazinede fare bile kalmadı. Fareler bile taşındı. Vergi toplayalım mı?
-    * Halkı soy: counter:hazine 15, counter:reaya -10
-    * Sadrazamın maaşını kes: counter:hazine 8, counter:ordu -5
-    * Fareler döner: counter:hazine -5
+	bearer: character:sadrazam
+	weight: 1.0
+	weight: 2.0 when counter:hazine < 30
+	lockturn: 10
+	> Sultanım, hazinede fare bile kalmadı. Fareler bile taşındı. Vergi toplayalım mı?
+	* Halkı soy: counter:hazine 15, counter:reaya -10
+	* Sadrazamın maaşını kes: counter:hazine 8, counter:ordu -5
+	* Fareler döner: counter:hazine -5
 
 Ticaret Anlaşması (card:ticaret)
-    bearer: character:sadrazam (variant:memnun)
-    weight: 0.8
-    require: !flag:savas
-    lockturn: 15
-    > Venedik elçisi gelmiş. Yanında 300 kilo peynir, 40 varil şarap ve bir de papağan getirmiş. Ticaret anlaşması istiyormuş.
-    * Papağanı al, gerisini gönder: counter:hazine 25, counter:din -10
-    * Peyniri de istemem: counter:din 5, counter:hazine -5
+	bearer: character:sadrazam (variant:memnun)
+	weight: 0.8
+	require: !flag:savas
+	lockturn: 15
+	> Venedik elçisi gelmiş. Yanında 300 kilo peynir, 40 varil şarap ve bir de papağan getirmiş. Ticaret anlaşması istiyormuş.
+	* Papağanı al, gerisini gönder: counter:hazine 25, counter:din -10
+	* Peyniri de istemem: counter:din 5, counter:hazine -5
 
 İsyan Haberi (card:isyan_haber)
-    bearer: character:sadrazam (variant:korkmus)
-    weight: 1.5
-    require: counter:reaya < 25
-    lockturn: 20
-    > Sultanım, Anadolu'da çiftçiler tırmık ve kazma ile saraya yürüyormuş! Önden bir adam geldi, elinde dilekçe var, üstünde sadece "olmaz olsun" yazıyor.
-    * Tırmıkla mı geliyorlar cidden: counter:ordu -10, +flag:isyan, card:_isyan_sonuc@3
-    * Dilekçeyi kabul et: counter:reaya 10, counter:hazine -5
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 1.5
+	require: counter:reaya < 25
+	lockturn: 20
+	> Sultanım, Anadolu'da çiftçiler tırmık ve kazma ile saraya yürüyormuş! Önden bir adam geldi, elinde dilekçe var, üstünde sadece "olmaz olsun" yazıyor.
+	* Tırmıkla mı geliyorlar cidden: counter:ordu -10, +flag:isyan, card:_isyan_sonuc@3
+	* Dilekçeyi kabul et: counter:reaya 10, counter:hazine -5
 
 İsyan Sonucu (card:_isyan_sonuc, ring)
-    bearer: character:yeniceriagasi
-    require: flag:isyan
-    > İsyan bastırıldı sultanım. Çiftçiler tırmıklarını bırakıp eve döndü. Biri kazmasını unutmuş, onu da biz aldık.
-    * Kazma lazım olur: -flag:isyan, counter:reaya -10, counter:ordu -5
+	bearer: character:yeniceriagasi
+	require: flag:isyan
+	> İsyan bastırıldı sultanım. Çiftçiler tırmıklarını bırakıp eve döndü. Biri kazmasını unutmuş, onu da biz aldık.
+	* Kazma lazım olur: -flag:isyan, counter:reaya -10, counter:ordu -5
 
 # --- Şeyhülislâm kartları ---
 
 Cami İnşası (card:cami_insa)
-    bearer: character:seyhulislam (variant:memnun)
-    weight: 0.7
-    require: counter:hazine > 40
-    lockturn: 20
-    > Sultanım, yeni bir cami yaptıralım. Minaresi o kadar yüksek olsun ki, müezzinin sesi Şam'dan duyulsun.
-    * Şam'dan duyulsun: counter:hazine -15, counter:din 15, counter:cami 1
-    * Müezzin nefes alamaz o yükseklikte: counter:din -5
+	bearer: character:seyhulislam (variant:memnun)
+	weight: 0.7
+	require: counter:hazine > 40
+	lockturn: 20
+	> Sultanım, yeni bir cami yaptıralım. Minaresi o kadar yüksek olsun ki, müezzinin sesi Şam'dan duyulsun.
+	* Şam'dan duyulsun: counter:hazine -15, counter:din 15, counter:cami 1
+	* Müezzin nefes alamaz o yükseklikte: counter:din -5
 
 Fetva (card:fetva)
-    bearer: character:seyhulislam (variant:ofkeli)
-    weight: 0.6
-    require: counter:din < 30
-    lockturn: 15
-    > Sultanım, halk camiye değil kahvehaneye gidiyor! Kahvehanede tavla oynuyorlar, zar atıyorlar, gülüyorlar! Gülmek haram mı bilmem ama şüpheli!
-    * Kahvehaneleri kapat: counter:din 15, counter:reaya -10
-    * Bırak gülsünler: counter:din -5, counter:reaya 5
+	bearer: character:seyhulislam (variant:ofkeli)
+	weight: 0.6
+	require: counter:din < 30
+	lockturn: 15
+	> Sultanım, halk camiye değil kahvehaneye gidiyor! Kahvehanede tavla oynuyorlar, zar atıyorlar, gülüyorlar! Gülmek haram mı bilmem ama şüpheli!
+	* Kahvehaneleri kapat: counter:din 15, counter:reaya -10
+	* Bırak gülsünler: counter:din -5, counter:reaya 5
 
 # --- Kaptan-ı Derya kartları ---
 
 Deniz Seferi (card:deniz_seferi)
-    bearer: character:kaptaniderya
-    weight: 0.5
-    require: !flag:savas, counter:ordu > 40
-    lockturn: 25
-    > Sultanım, Akdeniz'de bir korsan gemisi yakaladık. Kaptanı kendine "Denizlerin Kedisi" diyor ve gemisinde 14 tane gerçek kedi var.
-    * Kedileri al, korsanı as: counter:ordu -10, counter:hazine -8, card:_deniz_sonuc@5
-    * Denizlerin Kedisi bizi ilgilendirmez: counter:hazine -5, counter:reaya -5
+	bearer: character:kaptaniderya
+	weight: 0.5
+	require: !flag:savas, counter:ordu > 40
+	lockturn: 25
+	> Sultanım, Akdeniz'de bir korsan gemisi yakaladık. Kaptanı kendine "Denizlerin Kedisi" diyor ve gemisinde 14 tane gerçek kedi var.
+	* Kedileri al, korsanı as: counter:ordu -10, counter:hazine -8, card:_deniz_sonuc@5
+	* Denizlerin Kedisi bizi ilgilendirmez: counter:hazine -5, counter:reaya -5
 
 Deniz Seferi Sonucu (card:_deniz_sonuc, ring)
-    bearer: character:kaptaniderya (variant:memnun)
-    > Korsanları dağıttık! Ganimetin içinden altın, baharat ve bir de kafeste papağan çıktı. Papağan "padişahım çok yaşa" diyor ama aksanı çok kötü.
-    * Papağana maaş bağla: counter:hazine 30, counter:ordu 5
+	bearer: character:kaptaniderya (variant:memnun)
+	> Korsanları dağıttık! Ganimetin içinden altın, baharat ve bir de kafeste papağan çıktı. Papağan "padişahım çok yaşa" diyor ama aksanı çok kötü.
+	* Papağana maaş bağla: counter:hazine 30, counter:ordu 5
 
 # --- Harem Ağası kartları ---
 
 Haremde Yeni Kızlar (card:yeni_kizlar)
-    bearer: character:haremagasi
-    weight: 0.8
-    require: counter:reaya > 20
-    lockturn: 10
-    > Sultanım! uzak diyarlardan hareminiz için yeni kızlar getirdik.
-    * Getir getir: counter:haremziyaret 1
-    * Kadınlara vaktim yok: counter:ordu 10
+	bearer: character:haremagasi
+	weight: 0.8
+	require: counter:reaya > 20
+	lockturn: 10
+	> Sultanım! uzak diyarlardan hareminiz için yeni kızlar getirdik.
+	* Getir getir: counter:haremziyaret 1
+	* Kadınlara vaktim yok: counter:ordu 10
 
 Aşık Oldun (card:asik_oldun)
-    bearer: character:aksakallidede (variant:memnun)
-    weight: 0.5
-    require: counter:haremziyaret > 3, !flag:asiksin
-    > Aşık oldun paşam, yaşıyorsun bu hayatı!
-    * Evet, çok güzel: +flag:asiksin, card:_ask_destan
-    * Ne aşkı, devlet işi var: +flag:asiksin, counter:ordu 5
+	bearer: character:aksakallidede (variant:memnun)
+	weight: 0.5
+	require: counter:haremziyaret > 3, !flag:asiksin
+	> Aşık oldun paşam, yaşıyorsun bu hayatı!
+	* Evet, çok güzel: +flag:asiksin, card:_ask_destan
+	* Ne aşkı, devlet işi var: +flag:asiksin, counter:ordu 5
 
 Aşk Dillere Destan (card:_ask_destan, ring)
-    bearer: character:anlatici
-    > Yaşadığın aşk dillere destan oldu. Reaya size sempati duyuyor.
-    * ...: counter:reaya 10
+	bearer: character:anlatici
+	> Yaşadığın aşk dillere destan oldu. Reaya size sempati duyuyor.
+	* ...: counter:reaya 10
 
 # --- Haseki Sultan kartları ---
 
 Haseki Anne Ziyareti (card:haseki_anne)
-    bearer: character:hasekisultan
-    weight: 0.8
-    require: flag:asiksin
-    lockturn: 12
-    > Sultanım, annemi ziyaret edeceğim. Yanıma 40 deve, 12 araba hediye ve 200 yeniçeri muhafız lazım.
-    * Tabii canım: counter:hazine -15, counter:ordu -5, counter:reaya 5
-    * Biraz abartmadın mı: counter:reaya -5, counter:din -5
+	bearer: character:hasekisultan
+	weight: 0.8
+	require: flag:asiksin
+	lockturn: 12
+	> Sultanım, annemi ziyaret edeceğim. Yanıma 40 deve, 12 araba hediye ve 200 yeniçeri muhafız lazım.
+	* Tabii canım: counter:hazine -15, counter:ordu -5, counter:reaya 5
+	* Biraz abartmadın mı: counter:reaya -5, counter:din -5
 
 Haseki Kedi İstedi (card:haseki_kedi)
-    bearer: character:hasekisultan (variant:memnun)
-    weight: 0.5
-    require: flag:asiksin
-    lockturn: 20
-    > Sultanım, Mısır'dan bir kedi gördüm, çok tatlıydı. Bir tane değil, 47 tane istiyorum.
-    * 47 kedi gelsin: counter:hazine -10, counter:reaya 10
-    * Bir tane yeter: counter:hazine -5
-    * Kedi falan yok: counter:reaya -10
+	bearer: character:hasekisultan (variant:memnun)
+	weight: 0.5
+	require: flag:asiksin
+	lockturn: 20
+	> Sultanım, Mısır'dan bir kedi gördüm, çok tatlıydı. Bir tane değil, 47 tane istiyorum.
+	* 47 kedi gelsin: counter:hazine -10, counter:reaya 10
+	* Bir tane yeter: counter:hazine -5
+	* Kedi falan yok: counter:reaya -10
 
 Haseki Kıskanç (card:haseki_kiskanclik)
-    bearer: character:hasekisultan (variant:ofkeli)
-    weight: 0.6
-    require: flag:asiksin, counter:haremziyaret > 15
-    lockturn: 15
-    > Haremi ziyaret ettiğini duydum! Kim o karı?! Sarayı yakarım!
-    * Sadece seni seviyorum: counter:din -5, counter:reaya 5
-    * Padişahım ben, istediğimi yaparım: counter:reaya -10, counter:ordu 5
+	bearer: character:hasekisultan (variant:ofkeli)
+	weight: 0.6
+	require: flag:asiksin, counter:haremziyaret > 15
+	lockturn: 15
+	> Haremi ziyaret ettiğini duydum! Kim o karı?! Sarayı yakarım!
+	* Sadece seni seviyorum: counter:din -5, counter:reaya 5
+	* Padişahım ben, istediğimi yaparım: counter:reaya -10, counter:ordu 5
 
 Haseki Saray İnşası (card:haseki_saray)
-    bearer: character:hasekisultan (variant:kurnaz)
-    weight: 0.4
-    require: flag:asiksin, counter:hazine > 40
-    lockturn: 30
-    > Sultanım, bana özel bir saray yaptır. İçinde kuğulu havuz, altın hamam ve zürafaya bakan balkon olsun.
-    * Zürafaya bakan balkon mu: counter:hazine -20, counter:reaya -5, counter:din -5
-    * Kuğulu havuz yeter: counter:hazine -12
-    * Hayır: counter:reaya -15
+	bearer: character:hasekisultan (variant:kurnaz)
+	weight: 0.4
+	require: flag:asiksin, counter:hazine > 40
+	lockturn: 30
+	> Sultanım, bana özel bir saray yaptır. İçinde kuğulu havuz, altın hamam ve zürafaya bakan balkon olsun.
+	* Zürafaya bakan balkon mu: counter:hazine -20, counter:reaya -5, counter:din -5
+	* Kuğulu havuz yeter: counter:hazine -12
+	* Hayır: counter:reaya -15
 
 Haseki Şehzade Haberi (card:haseki_sehzade)
-    bearer: character:hasekisultan (variant:memnun)
-    weight: 0.3
-    require: flag:asiksin, !flag:evlilik
-    lockturn: dispose
-    > Sultanım, müjde! Şehzadeniz dünyaya geldi! Adını ne koyalım?
-    * Mehmet olsun: counter:sehzade 1, counter:reaya 15, counter:din 10, +flag:evlilik
-    * Süleyman olsun: counter:sehzade 1, counter:reaya 15, counter:din 10, +flag:evlilik
+	bearer: character:hasekisultan (variant:memnun)
+	weight: 0.3
+	require: flag:asiksin, !flag:evlilik
+	lockturn: dispose
+	> Sultanım, müjde! Şehzadeniz dünyaya geldi! Adını ne koyalım?
+	* Mehmet olsun: counter:sehzade 1, counter:reaya 15, counter:din 10, +flag:evlilik
+	* Süleyman olsun: counter:sehzade 1, counter:reaya 15, counter:din 10, +flag:evlilik
 
 Haseki Valideye Komplo (card:haseki_komplo)
-    bearer: character:hasekisultan (variant:kurnaz)
-    weight: 0.3
-    require: flag:asiksin, flag:evlilik
-    lockturn: 25
-    > Sultanım, valide sultan beni zehirletmeye çalışıyor. Ya o ya ben!
-    * Valideyi sürgüne gönder: counter:din -15, counter:reaya -5
-    * Saçmalama: counter:hazine -10
-    * Araştırayım: counter:hazine -5, counter:ordu -5
+	bearer: character:hasekisultan (variant:kurnaz)
+	weight: 0.3
+	require: flag:asiksin, flag:evlilik
+	lockturn: 25
+	> Sultanım, valide sultan beni zehirletmeye çalışıyor. Ya o ya ben!
+	* Valideyi sürgüne gönder: counter:din -15, counter:reaya -5
+	* Saçmalama: counter:hazine -10
+	* Araştırayım: counter:hazine -5, counter:ordu -5
 
 # --- Yeniçeri Ağası kartları ---
 
 Yeniçeri İsyanı (card:yeniceri_isyan)
-    bearer: character:yeniceriagasi (variant:ofkeli)
-    weight: 1.0
-    require: counter:ordu < 20
-    lockturn: 30
-    > Yeniçeriler kazan kaldırdı sultanım! Kazanın içinde çorba var. Çorbayı yere döktüler. Şimdi avluda çorba gölü var. Ördekler geldi.
-    * Ördeklere de ulufe ver: counter:hazine -15, counter:ordu 15
-    * Çorbayı topla, yeniçerileri de: counter:ordu -10, counter:reaya -5
+	bearer: character:yeniceriagasi (variant:ofkeli)
+	weight: 1.0
+	require: counter:ordu < 20
+	lockturn: 30
+	> Yeniçeriler kazan kaldırdı sultanım! Kazanın içinde çorba var. Çorbayı yere döktüler. Şimdi avluda çorba gölü var. Ördekler geldi.
+	* Ördeklere de ulufe ver: counter:hazine -15, counter:ordu 15
+	* Çorbayı topla, yeniçerileri de: counter:ordu -10, counter:reaya -5
 
 Savaş Teklifi (card:savas_teklif)
-    bearer: character:yeniceriagasi
-    weight: 0.5
-    require: !flag:savas, counter:ordu > 50
-    lockturn: 30
-    > Sultanım, askerler o kadar hazır ki, kılıçlarını bilerken kıvılcımdan saray bahçesi tutuştu. Bu enerjiyi düşmana yönlendirelim.
-    * Bahçe zaten yanmış, sefere: +flag:savas, +flag:kuzeyde_savas, card:_savas@5
-    * Önce bahçeyi söndürün: counter:ordu -5
+	bearer: character:yeniceriagasi
+	weight: 0.5
+	require: !flag:savas, counter:ordu > 50
+	lockturn: 30
+	> Sultanım, askerler o kadar hazır ki, kılıçlarını bilerken kıvılcımdan saray bahçesi tutuştu. Bu enerjiyi düşmana yönlendirelim.
+	* Bahçe zaten yanmış, sefere: +flag:savas, +flag:kuzeyde_savas, card:_savas@5
+	* Önce bahçeyi söndürün: counter:ordu -5
 
 Savaş (card:_savas, ring)
-    bearer: character:yeniceriagasi
-    require: flag:savas
-    > Savaş devam ediyor sultanım! Düşman elçisi gelip "pes eder misiniz?" diye sordu, biz de "hayır" dedik, o da "tamam ben de sormak istedim" deyip gitti.
-    * Elçinin arkasından koş: counter:ordu -10, [card:_zafer, card:_yenilgi]
-    * Bir daha sormasını bekle: counter:ordu -5, counter:hazine -10, card:_savas@3
+	bearer: character:yeniceriagasi
+	require: flag:savas
+	> Savaş devam ediyor sultanım! Düşman elçisi gelip "pes eder misiniz?" diye sordu, biz de "hayır" dedik, o da "tamam ben de sormak istedim" deyip gitti.
+	* Elçinin arkasından koş: counter:ordu -10, [card:_zafer, card:_yenilgi]
+	* Bir daha sormasını bekle: counter:ordu -5, counter:hazine -10, card:_savas@3
 
 Zafer (card:_zafer, ring)
-    bearer: character:yeniceriagasi (variant:memnun)
-    require: counter:ordu > 25
-    > Zafer! Düşman kaçarken zırhlarını çıkarıp bırakmış, şimdi 400 tane boş zırh var ortada. Korkuluk yapabiliriz.
-    * Zırh korkuluk festivali: -flag:savas, -flag:kuzeyde_savas, counter:hazine 30, counter:reaya 15
+	bearer: character:yeniceriagasi (variant:memnun)
+	require: counter:ordu > 25
+	> Zafer! Düşman kaçarken zırhlarını çıkarıp bırakmış, şimdi 400 tane boş zırh var ortada. Korkuluk yapabiliriz.
+	* Zırh korkuluk festivali: -flag:savas, -flag:kuzeyde_savas, counter:hazine 30, counter:reaya 15
 
 Yenilgi (card:_yenilgi, ring)
-    bearer: character:yeniceriagasi (variant:korkmus)
-    require: counter:ordu <= 25
-    > Mağlup olduk sultanım. Ama düşman zafer şenliği yaparken kendi çadırlarını yakmış. Teknik olarak berabere sayılır mı?
-    * Berabere say: -flag:savas, -flag:kuzeyde_savas, counter:ordu -20, counter:hazine -20
+	bearer: character:yeniceriagasi (variant:korkmus)
+	require: counter:ordu <= 25
+	> Mağlup olduk sultanım. Ama düşman zafer şenliği yaparken kendi çadırlarını yakmış. Teknik olarak berabere sayılır mı?
+	* Berabere say: -flag:savas, -flag:kuzeyde_savas, counter:ordu -20, counter:hazine -20
 
 # --- Valide Sultan kartları ---
 
 Valide Nasihat (card:valide_nasihat)
-    bearer: character:validesultan
-    weight: 0.8
-    lockturn: 12
-    > Oğlum, ben senin yaşındayken baban 3 kale fethetmişti. Sen daha saraydan çıkmadın. Hadi en azından bahçeye çık.
-    * Bahçeye çıkayım: counter:reaya 10, counter:hazine -5
-    * Bahçede böcek var: counter:reaya 5
+	bearer: character:validesultan
+	weight: 0.8
+	lockturn: 12
+	> Oğlum, ben senin yaşındayken baban 3 kale fethetmişti. Sen daha saraydan çıkmadın. Hadi en azından bahçeye çık.
+	* Bahçeye çıkayım: counter:reaya 10, counter:hazine -5
+	* Bahçede böcek var: counter:reaya 5
 
 Evlilik Teklifi (card:evlilik)
-    bearer: character:validesultan (variant:memnun)
-    weight: 0.6
-    require: !flag:evlilik
-    lockturn: dispose
-    > Oğlum, sana eş buldum. Kızın babası 7 kale sahibi, kendisi 4 dil biliyor ve güreşte seni yener.
-    * Güreşte yenerse alırım: +flag:evlilik, counter:din 10, counter:reaya 10, counter:hazine -15
-    * Güreş istemem: counter:din -5
+	bearer: character:validesultan (variant:memnun)
+	weight: 0.6
+	require: !flag:evlilik
+	lockturn: dispose
+	> Oğlum, sana eş buldum. Kızın babası 7 kale sahibi, kendisi 4 dil biliyor ve güreşte seni yener.
+	* Güreşte yenerse alırım: +flag:evlilik, counter:din 10, counter:reaya 10, counter:hazine -15
+	* Güreş istemem: counter:din -5
 
 # --- Soytarı kartları ---
 
 Soytarı Şakası (card:soytari_saka)
-    bearer: character:soytari
-    weight: 0.4
-    lockturn: 8
-    > Sultanım, dün gece rüyamda devletiniz battı. Ama endişelenmeyin, rüyamda batmayan tek şey sadrazamın egosu.
-    * Güldüm ama korkuyorum: counter:reaya 5
-    * Rüyanda da kes sesini: counter:reaya -5
+	bearer: character:soytari
+	weight: 0.4
+	lockturn: 8
+	> Sultanım, dün gece rüyamda devletiniz battı. Ama endişelenmeyin, rüyamda batmayan tek şey sadrazamın egosu.
+	* Güldüm ama korkuyorum: counter:reaya 5
+	* Rüyanda da kes sesini: counter:reaya -5
 
 Soytarı Dedikodusu (card:soytari_dedikodu)
-    bearer: character:soytari (variant:kurnaz)
-    weight: 0.3
-    lockturn: 15
-    > Sultanım, sadrazam gizlice saray kedisiyle konuşuyormuş. Kedi cevap vermiş mi bilmiyorum ama sadrazam "haklısın" demiş.
-    * Kediyi sorgula: counter:hazine -10, counter:ordu 5
-    * Kedi haklıdır: counter:hazine 5
+	bearer: character:soytari (variant:kurnaz)
+	weight: 0.3
+	lockturn: 15
+	> Sultanım, sadrazam gizlice saray kedisiyle konuşuyormuş. Kedi cevap vermiş mi bilmiyorum ama sadrazam "haklısın" demiş.
+	* Kediyi sorgula: counter:hazine -10, counter:ordu 5
+	* Kedi haklıdır: counter:hazine 5
 
 Soytarı Felsefe (card:soytari_felsefe)
-    bearer: character:soytari (variant:kurnaz)
-    weight: 0.3
-    lockturn: 12
-    > Sultanım, düşündüm de, taht aslında süslü bir sandalye. Ve siz süslü bir sandalyede oturan bir adam. Derin, değil mi?
-    * Derinden derin: counter:reaya 5, counter:din -5
-    * Sandalyeyi kafana atarım: counter:ordu 5, counter:reaya -5
+	bearer: character:soytari (variant:kurnaz)
+	weight: 0.3
+	lockturn: 12
+	> Sultanım, düşündüm de, taht aslında süslü bir sandalye. Ve siz süslü bir sandalyede oturan bir adam. Derin, değil mi?
+	* Derinden derin: counter:reaya 5, counter:din -5
+	* Sandalyeyi kafana atarım: counter:ordu 5, counter:reaya -5
 
 Soytarı Taklit (card:soytari_taklit)
-    bearer: character:soytari (variant:memnun)
-    weight: 0.3
-    lockturn: 20
-    > Sultanım, bakın şeyhülislâmı taklit ediyorum: "HARAM! HARAM! Bu da haram! Gülmek haram! Gülmemek de haram!"
-    * Çok benziyor: counter:din -10, counter:reaya 10
-    * Şeyhülislâm duymasın: counter:din 5
+	bearer: character:soytari (variant:memnun)
+	weight: 0.3
+	lockturn: 20
+	> Sultanım, bakın şeyhülislâmı taklit ediyorum: "HARAM! HARAM! Bu da haram! Gülmek haram! Gülmemek de haram!"
+	* Çok benziyor: counter:din -10, counter:reaya 10
+	* Şeyhülislâm duymasın: counter:din 5
 
 # --- Orman Cini kartları ---
 
 Orman Cini Karşılaşması (card:ormancini_karsilasma)
-    bearer: character:ormancini
-    weight: 0.2
-    require: !flag:ormancini
-    lockturn: dispose
-    > Ormanda yeşil, pırıl pırıl bir yaratık belirdi. "Ben orman ciniyim" dedi. "Dilek hakkın var ama dileklerin mantıklı olmasın, mantıklı dileklerden nefret ederim."
-    * Bana uçan bir halı ver: counter:hazine 30, +flag:ormancini
-    * Orduma konuşan zırhlar ver: counter:ordu 30, +flag:ormancini
-    * Allah Allah deyip kaç: counter:din 10, +flag:ormancini
+	bearer: character:ormancini
+	weight: 0.2
+	require: !flag:ormancini
+	lockturn: dispose
+	> Ormanda yeşil, pırıl pırıl bir yaratık belirdi. "Ben orman ciniyim" dedi. "Sana üç dilek hakkı veriyorum ama hangi dileğinin gerçekleşeceğini bilemeyeceksin."
+	* Kabul: counter:dilek 3, +flag:ormancini
+	* Allah Allah deyip kaç: counter:din 10, +flag:ormancini
 
 Orman Cini Geri Döndü (card:ormancini_geri)
-    bearer: character:ormancini
-    weight: 0.15
-    require: flag:ormancini
-    lockturn: 25
-    > Orman cini yine geldi. Bu sefer ağaçların tepesinde oturuyor ve elinde bir kağıt var. "Vergi beyannameni hazırladım" diyor.
-    * Cin mi vergi beyannamesi mi: counter:hazine 15, counter:din -5
-    * Defol cin: counter:din 10, counter:hazine -10
+	bearer: character:ormancini
+	weight: 0.15
+	require: flag:ormancini
+	lockturn: 25
+	> Orman cini yine geldi. Bu sefer ağaçların tepesinde oturuyor ve elinde bir kağıt var. "Vergi beyannameni hazırladım" diyor.
+	* Cin mi vergi beyannamesi mi: counter:hazine 15, counter:din -5
+	* Defol cin: counter:din 10, counter:hazine -10
 
 Orman Cini Teklif (card:ormancini_teklif)
-    bearer: character:ormancini (variant:kurnaz)
-    weight: 0.1
-    require: flag:ormancini
-    lockturn: 30
-    > Orman cini sarayın kapısında. "Sadrazamınız olmak istiyorum" diyor. Yanında referans mektubu var, yazan: diğer orman cinleri.
-    * Kabul, mevcut sadrazamdan iyi olur: counter:hazine 20, counter:din -15
-    * Cin sadrazam olmaz: counter:din 5
+	bearer: character:ormancini (variant:kurnaz)
+	weight: 0.1
+	require: flag:ormancini
+	lockturn: 30
+	> Orman cini sarayın kapısında. "Sadrazamınız olmak istiyorum" diyor. Yanında referans mektubu var, yazan: diğer orman cinleri.
+	* Kabul, mevcut sadrazamdan iyi olur: counter:hazine 20, counter:din -15
+	* Cin sadrazam olmaz: counter:din 5
 
 # --- Doğal afet kartları ---
 
 Deprem (card:deprem)
-    bearer: character:sancakbeyi (variant:korkmus)
-    weight: 0.3
-    require: !flag:deprem
-    lockturn: 40
-    > Sultanım, deprem oldu! Sancak beyinin konağı yıkıldı, ama minare sapasağlam duruyor. Şeyhülislâm bunu mucize ilan etti.
-    * Mucize ya da değil, yardım gönder: counter:hazine -15, counter:reaya 10, +flag:deprem, card:_deprem_sonu@5
-    * Mucizeyse yardıma gerek yok: counter:din 5, counter:reaya -15, +flag:deprem, card:_deprem_sonu@5
+	bearer: character:sancakbeyi (variant:korkmus)
+	weight: 0.3
+	require: !flag:deprem
+	lockturn: 40
+	> Sultanım, deprem oldu! Sancak beyinin konağı yıkıldı, ama minare sapasağlam duruyor. Şeyhülislâm bunu mucize ilan etti.
+	* Mucize ya da değil, yardım gönder: counter:hazine -15, counter:reaya 10, +flag:deprem, card:_deprem_sonu@5
+	* Mucizeyse yardıma gerek yok: counter:din 5, counter:reaya -15, +flag:deprem, card:_deprem_sonu@5
 
 Deprem Sonu (card:_deprem_sonu, ring)
-    bearer: character:sancakbeyi
-    require: flag:deprem
-    > Deprem bölgesi toparlanıyor sultanım. Sancak beyi yeni konağını minarenin yanına yaptırdı, güvenli olsun diye.
-    * Mantıklı: -flag:deprem
+	bearer: character:sancakbeyi
+	require: flag:deprem
+	> Deprem bölgesi toparlanıyor sultanım. Sancak beyi yeni konağını minarenin yanına yaptırdı, güvenli olsun diye.
+	* Mantıklı: -flag:deprem
 
 Kıtlık (card:kitlik)
-    bearer: character:sancakbeyi (variant:korkmus)
-    weight: 0.4
-    require: !flag:kitlik, !flag:bolluk
-    lockturn: 30
-    > Sultanım, kıtlık! Halk o kadar aç ki birisi saray duvarındaki süs kabağını yemeye çalışmış. Kabak tahtanmış.
-    * Gerçek kabak dağıtın: counter:hazine -12, counter:reaya 8, +flag:kitlik, card:_kitlik_sonu@8
-    * Dışarıdan kabak ithal et: counter:hazine -18, counter:reaya 5, +flag:kitlik, card:_kitlik_sonu@5
+	bearer: character:sancakbeyi (variant:korkmus)
+	weight: 0.4
+	require: !flag:kitlik, !flag:bolluk
+	lockturn: 30
+	> Sultanım, kıtlık! Halk o kadar aç ki birisi saray duvarındaki süs kabağını yemeye çalışmış. Kabaklar da tahtadanmış.
+	* Gerçek kabak dağıtın: counter:hazine -12, counter:reaya 8, +flag:kitlik, card:_kitlik_sonu@8
+	* Dışarıdan kabak ithal et: counter:hazine -18, counter:reaya 5, +flag:kitlik, card:_kitlik_sonu@5
 
 Kıtlık Sonu (card:_kitlik_sonu, ring)
-    bearer: character:sancakbeyi (variant:memnun)
-    require: flag:kitlik
-    > Hasat mevsimi geldi sultanım! Bu sefer kabaklar gerçek.
-    * Tahta kabağı da yerine koyun: -flag:kitlik, counter:reaya 5
+	bearer: character:sancakbeyi (variant:memnun)
+	require: flag:kitlik
+	> Hasat mevsimi geldi sultanım! Bu sefer kabaklar gerçek.
+	* Tahta kabağı da yerine koyun: -flag:kitlik, counter:reaya 5
 
 # --- Salgın kartları ---
 
 Veba Salgını (card:veba)
-    bearer: character:seyhulislam (variant:korkmus)
-    weight: 0.2
-    require: !flag:veba, counter:reaya > 30
-    lockturn: 50
-    > Sultanım, şehirde veba yayılıyor! Soytarı "ben zaten ölüyüm içten içe" dedi, kimse gülmedi.
-    * Karantina, soytarıya da: counter:hazine -12, counter:reaya -5, +flag:veba, card:_veba_sonu@8
-    * Dua ile geçer: counter:din 10, counter:reaya -15, +flag:veba, card:_veba_sonu@12
+	bearer: character:seyhulislam (variant:korkmus)
+	weight: 0.2
+	require: !flag:veba, counter:reaya > 30
+	lockturn: 50
+	> Sultanım, şehirde veba yayılıyor! Soytarı "ben zaten ölüyüm içten içe" dedi, kimse gülmedi.
+	* Karantina, soytarıya da: counter:hazine -12, counter:reaya -5, +flag:veba, card:_veba_sonu@8
+	* Dua ile geçer: counter:din 10, counter:reaya -15, +flag:veba, card:_veba_sonu@12
 
 Veba Sonu (card:_veba_sonu, ring)
-    bearer: character:seyhulislam
-    require: flag:veba
-    > Salgın bitti sultanım. Soytarı hâlâ karantinada, çıkarmayı unuttuk ama şikayet etmiyor.
-    * Çıkarın artık: -flag:veba, counter:din 5
+	bearer: character:seyhulislam
+	require: flag:veba
+	> Salgın bitti sultanım. Soytarı hâlâ karantinada, çıkarmayı unuttuk ama şikayet etmiyor.
+	* Çıkarın artık: -flag:veba, counter:din 5
 
 # --- Kardeş kartları ---
 
 Kardeş Meselesi (card:kardes_meselesi)
-    bearer: character:sadrazam (variant:korkmus)
-    weight: 1.2
-    require: !flag:kardeskafeste, !flag:kardesuzakta, !flag:kardesbitti
-    lockturn: dispose
-    > Sultanım, kardeşiniz halk tarafından gereğinden fazla seviliyor. Pazarda dolaşıyor, çocuklara şeker dağıtıyor, hatta dün bir de kediye süt vermiş. Halk "keşke o padişah olsa" demeye başladı.
-    * Kafese kapatın: +flag:kardeskafeste, counter:reaya -10, counter:ordu 5
-    * Sancak beyi yap, uzağa gönder: +flag:kardesuzakta, counter:reaya 5, counter:hazine -8
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 1.2
+	require: !flag:kardeskafeste, !flag:kardesuzakta, !flag:kardesbitti
+	lockturn: dispose
+	> Sultanım, kardeşiniz halk tarafından gereğinden fazla seviliyor. Pazarda dolaşıyor, çocuklara şeker dağıtıyor, hatta dün bir de kediye süt vermiş. Halk "keşke o padişah olsa" demeye başladı.
+	* Kafese kapatın: +flag:kardeskafeste, counter:reaya -10, counter:ordu 5
+	* Sancak beyi yap, uzağa gönder: +flag:kardesuzakta, counter:reaya 5, counter:hazine -8
 
 # -- Kafesteki kardeş zinciri --
 
 Kafes Ziyareti (card:kafes_ziyaret)
-    bearer: character:validesultan (variant:ofkeli)
-    weight: 0.7
-    require: flag:kardeskafeste
-    lockturn: 15
-    > Oğlum, kardeşini kafese kapattın! O da benim evladım! Kafeste kitap bile yok, sadece bir güvercin var, güvercinle konuşuyor!
-    * Kitap gönder: counter:din 5, counter:hazine -5
-    * Güvercinle idare etsin: counter:din -10, counter:reaya -5
+	bearer: character:validesultan (variant:ofkeli)
+	weight: 0.7
+	require: flag:kardeskafeste
+	lockturn: 15
+	> Oğlum, kardeşini kafese kapattın! O da benim evladım! Kafeste kitap bile yok, sadece bir güvercin var, güvercinle konuşuyor!
+	* Kitap gönder: counter:din 5, counter:hazine -5
+	* Güvercinle idare etsin: counter:din -10, counter:reaya -5
 
 Kafes Kaçış Planı (card:kafes_kacis)
-    bearer: character:soytari (variant:kurnaz)
-    weight: 0.4
-    require: flag:kardeskafeste
-    lockturn: 20
-    > Sultanım, kafesteki kardeşiniz güvercinle mesaj gönderiyormuş. Güvercin yeniçeri kışlasına uçuyor. Yeniçeriler güvercine "komutanım" demeye başlamış.
-    * Güvercini de kafese koy: counter:ordu 5, counter:reaya -5
-    * Komutan güvercin mi olur: counter:ordu -5
+	bearer: character:soytari (variant:kurnaz)
+	weight: 0.4
+	require: flag:kardeskafeste
+	lockturn: 20
+	> Sultanım, kafesteki kardeşiniz güvercinle mesaj gönderiyormuş. Güvercin yeniçeri kışlasına uçuyor. Yeniçeriler güvercine "komutanım" demeye başlamış.
+	* Güvercini de kafese koy: counter:ordu 5, counter:reaya -5
+	* Komutan güvercin mi olur: counter:ordu -5
 
 Yeniçeri Kardeşi İster (card:yeniceri_kardes)
-    bearer: character:yeniceriagasi (variant:ofkeli)
-    weight: 0.6
-    require: flag:kardeskafeste, counter:ordu < 35
-    lockturn: 25
-    > Sultanım, yeniçeriler kardeşinizi tahta çıkarmak istiyor! Kafes kapısında 200 yeniçeri bekliyormuş. Güvercin de orada.
-    * Ulufe ver dağılsınlar: counter:hazine -20, counter:ordu 10
-    * Kardeşi serbest bırak, barış: -flag:kardeskafeste, +flag:kardesbitti, counter:reaya 15, counter:ordu -5
-    * Yeniçerileri bastır: counter:ordu -15, card:_kafes_darbe
+	bearer: character:yeniceriagasi (variant:ofkeli)
+	weight: 0.6
+	require: flag:kardeskafeste, counter:ordu < 35
+	lockturn: 25
+	> Sultanım, yeniçeriler kardeşinizi tahta çıkarmak istiyor! Kafes kapısında 200 yeniçeri bekliyormuş. Güvercin de orada.
+	* Ulufe ver dağılsınlar: counter:hazine -20, counter:ordu 10
+	* Kardeşi serbest bırak, barış: -flag:kardeskafeste, +flag:kardesbitti, counter:reaya 15, counter:ordu -5
+	* Yeniçerileri bastır: counter:ordu -15, card:_kafes_darbe
 
 Kafes Darbe Girişimi (card:_kafes_darbe, ring)
-    bearer: character:yeniceriagasi (variant:korkmus)
-    > Darbe bastırıldı sultanım! Ama kardeşiniz kaçış sırasında kafes kapısına çarpmış, burnu kırılmış. Güvercin de kaçmış.
-    * Burnu iyileşir: counter:ordu -10, counter:reaya -15, +flag:kardesbitti, -flag:kardeskafeste
+	bearer: character:yeniceriagasi (variant:korkmus)
+	> Darbe bastırıldı sultanım! Ama kardeşiniz kaçış sırasında kafes kapısına çarpmış, burnu kırılmış. Güvercin de kaçmış.
+	* Burnu iyileşir: counter:ordu -10, counter:reaya -15, +flag:kardesbitti, -flag:kardeskafeste
 
 Kafes Delirmesi (card:kafes_delilik)
-    bearer: character:aksakallidede
-    weight: 0.3
-    require: flag:kardeskafeste
-    lockturn: 30
-    > Sultanım, kafesteki kardeşiniz güvercinle satranç oynamaya başlamış. Ve kaybediyor.
-    * Bari kazansın diye kolay hamle yapsın güvercin: counter:din -5
-    * Güvercini al artık: counter:reaya -5, counter:din 5
+	bearer: character:aksakallidede
+	weight: 0.3
+	require: flag:kardeskafeste
+	lockturn: 30
+	> Sultanım, kafesteki kardeşiniz güvercinle satranç oynamaya başlamış. Ve kaybediyor.
+	* Bari kazansın diye kolay hamle yapsın güvercin: counter:din -5
+	* Güvercini al artık: counter:reaya -5, counter:din 5
 
 # -- Uzaktaki kardeş zinciri --
 
 Sancaktan Haberler (card:sancak_haber)
-    bearer: character:sancakbeyi (variant:korkmus)
-    weight: 0.6
-    require: flag:kardesuzakta
-    lockturn: 15
-    > Sultanım, kardeşiniz sancakta çok seviliyormuş. Kendi adına para bastırmış. Paranın üstünde kendi sureti var ama gülümsüyor. Sizin paralarda hiç gülümsemiyorsunuz.
-    * Ben de gülümserim: counter:reaya 5, counter:din -2
-    * Para bastırmak ne cüret: counter:ordu -5, counter:hazine -8
+	bearer: character:sancakbeyi (variant:korkmus)
+	weight: 0.6
+	require: flag:kardesuzakta
+	lockturn: 15
+	> Sultanım, kardeşiniz sancakta çok seviliyormuş. Kendi adına para bastırmış. Paranın üstünde kendi sureti var ama gülümsüyor. Sizin paralarda hiç gülümsemiyorsunuz.
+	* Ben de gülümserim: counter:reaya 5, counter:din -2
+	* Para bastırmak ne cüret: counter:ordu -5, counter:hazine -8
 
 Kardeş İttifak Kurdu (card:kardes_ittifak)
-    bearer: character:kaptaniderya (variant:korkmus)
-    weight: 0.4
-    require: flag:kardesuzakta
-    lockturn: 25
-    > Sultanım, kardeşiniz Venedik'le ittifak kurmuş! Venedikliler ona 3 gemi, 200 asker ve bir de papağan vermişler. Papağan "kardeşim padişah" diyormuş.
-    * Papağan haklı, ben padişahım: counter:ordu -5, counter:hazine -10
-    * Venedik'e nota gönder: counter:hazine -5, counter:ordu 5
+	bearer: character:kaptaniderya (variant:korkmus)
+	weight: 0.4
+	require: flag:kardesuzakta
+	lockturn: 25
+	> Sultanım, kardeşiniz Venedik'le ittifak kurmuş! Venedikliler ona 3 gemi, 200 asker ve bir de papağan vermişler. Papağan "kardeşim padişah" diyormuş.
+	* Papağan haklı, ben padişahım: counter:ordu -5, counter:hazine -10, +flag:kardespapagan, [card:_cin_papagan, card:_papagan_normal]
+	* Venedik'e nota gönder: counter:hazine -5, card:_nota_secimi
 
 Kardeş Bağımsızlık İlan Etti (card:kardes_bagimsizlik)
-    bearer: character:sadrazam (variant:korkmus)
-    weight: 0.3
-    require: flag:kardesuzakta, counter:ordu < 40
-    lockturn: 30
-    > Sultanım, kardeşiniz bağımsızlık ilan etmiş! Kendi bayrağını yapmış, üstünde gülen bir yüz var. Manifesto yazmış, tek maddesi: "Abi kötü padişah."
-    * Orduyu gönder: counter:ordu -15, counter:hazine -10, card:_kardes_savas@5
-    * Tanı bağımsızlığını: counter:reaya -15, counter:ordu -5, +flag:kardesbitti, -flag:kardesuzakta
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.3
+	require: flag:kardesuzakta, counter:ordu < 40
+	lockturn: 30
+	> Sultanım, kardeşiniz bağımsızlık ilan etmiş! Kendi bayrağını yapmış, üstünde gülen bir yüz var. Manifesto yazmış, tek maddesi: "Abi kötü padişah."
+	* Orduyu gönder: counter:ordu -15, counter:hazine -10, card:_kardes_savas@5
+	* Tanı bağımsızlığını: counter:reaya -15, counter:ordu -5, +flag:kardesbitti, -flag:kardesuzakta
 
 Kardeş Savaşı (card:_kardes_savas, ring)
-    bearer: character:yeniceriagasi
-    require: flag:kardesuzakta
-    > Kardeşinizle savaşıyoruz sultanım! Kardeşiniz ön safta, elinde kılıç yerine bayrak var. Bayrakta hâlâ gülen yüz.
-    * Bayrağı alın: counter:ordu -8, [card:_kardes_yenildi, card:_kardes_kazandi]
-    * Müzakere et: counter:hazine -15, +flag:kardesbitti, -flag:kardesuzakta
+	bearer: character:yeniceriagasi
+	require: flag:kardesuzakta
+	> Kardeşinizle savaşıyoruz sultanım! Kardeşiniz ön safta, elinde kılıç yerine bayrak var. Bayrakta hâlâ gülen yüz.
+	* Bayrağı alın: counter:ordu -8, [card:_kardes_yenildi, card:_kardes_kazandi]
+	* Müzakere et: counter:hazine -15, +flag:kardesbitti, -flag:kardesuzakta
 
 Kardeş Yenildi (card:_kardes_yenildi, ring)
-    bearer: character:yeniceriagasi (variant:memnun)
-    require: counter:ordu > 20
-    > Kardeşiniz yakalandı sultanım! Teslim olurken "en azından papağanım kaldı" demiş. Papağan da kaçmış.
-    * Kafese koy: +flag:kardeskafeste, -flag:kardesuzakta, counter:ordu -5
-    * Affet, sürgüne gönder: -flag:kardesuzakta, +flag:kardesbitti, counter:reaya 10, counter:din 8
+	bearer: character:yeniceriagasi (variant:memnun)
+	require: counter:ordu > 20
+	> Kardeşiniz yakalandı sultanım! Teslim olurken "en azından papağanım kaldı" demiş. Papağan da kaçmış.
+	* Kafese koy: +flag:kardeskafeste, -flag:kardesuzakta, counter:ordu -5
+	* Affet, sürgüne gönder: -flag:kardesuzakta, +flag:kardesbitti, counter:reaya 10, counter:din 8
 
 Kardeş Kazandı (card:_kardes_kazandi, ring)
-    bearer: character:sadrazam (variant:korkmus)
-    require: counter:ordu <= 20
-    > Kaybettik sultanım. Ama kardeşiniz mesaj göndermiş: "Abi barış yapalım, ben burada kalayım, sen orada kal. Papağanı geri aldım, sana selam söylüyor."
-    * Papağana selamımı ilet: -flag:kardesuzakta, +flag:kardesbitti, counter:ordu -10, counter:hazine -8, counter:reaya -8
+	bearer: character:sadrazam (variant:korkmus)
+	require: counter:ordu <= 20
+	> Kaybettik sultanım. Ama kardeşiniz mesaj göndermiş: "Abi barış yapalım, ben burada kalayım, sen orada kal. Papağanı geri aldım, sana selam söylüyor."
+	* Papağana selamımı ilet: -flag:kardesuzakta, +flag:kardesbitti, counter:ordu -10, counter:hazine -8, counter:reaya -8
+
+Nota Seçimi (card:_nota_secimi, ring)
+	bearer: character:sadrazam
+	> Sultanım, Venedik'e hangi notayı gönderelim?
+	* Do: counter:ordu 5
+	* Re: counter:reaya 5
+
+# Cin dileği: kardeş papağana dönüştü
+Cin Papağan Dileği (card:_cin_papagan, ring)
+	bearer: character:ormancini
+	require: counter:dilek > 0
+	> Cin belirdi! "Dileğin gerçekleşti! Kardeşini papağana çevirdim. Artık uçabilir, konuşabilir ve fıstık yiyebilir. Rica ederim."
+	* ...: counter:dilek -1
+
+Papağan Dileği Yok (card:_papagan_normal, ring)
+	> Papağan omzunuza kondu ve "padişahım" dedi. Tuhaf bir kuş.
+	* Tuhaf:
+
+# Kardeş papağana dönüştü — uzaktaysa uçarak gelir
+Papağan Kardeş Döndü (card:papagan_dondu)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.5
+	require: flag:kardespapagan, flag:kardesuzakta
+	lockturn: 20
+	> Sultanım, kardeşiniz papağan formunda Venedik'ten uçarak gelmiş! Saray avlusuna kondu, "abi açım" diye bağırıyor.
+	* Kafese koy: +flag:kardeskafeste, -flag:kardesuzakta, counter:ordu 5
+	* Yem ver, serbest bırak: -flag:kardesuzakta, counter:reaya 5
+
+# Kardeş papağana dönüştü — kafesteyse uçarak kaçar
+Papağan Kardeş Kaçtı (card:papagan_kacti)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.5
+	require: flag:kardespapagan, flag:kardeskafeste
+	lockturn: 20
+	> Sultanım, kardeşiniz kafes parmaklıklarının arasından sıyrılmış! Papağan olmanın avantajı, kafesler insana göre tasarlanmış. Pencereden uçtu gitti.
+	* Arkasından şahin gönderin: counter:ordu -5, -flag:kardeskafeste, +flag:kardesuzakta
+	* Uçsun gitsin: -flag:kardeskafeste, +flag:kardesuzakta, counter:reaya -5
+
+# Kardeş papağan — ne kafeste ne uzakta, sarayda serbest dolaşıyor
+Papağan Pencerede (card:papagan_pencere)
+	bearer: character:sadrazam (variant:korkmus)
+	weight: 0.4
+	require: flag:kardespapagan, !flag:kardeskafeste, !flag:kardesuzakta, !flag:kardesbitti
+	lockturn: 15
+	> Sultanım, kardeşiniz papağan formunda sarayın penceresine konmuş, "ben sultan olacağım" diye bağırıyor. Halk toplanmış dinliyor.
+	* Pompalı ile vur: counter:din -10, counter:reaya -5, -flag:kardespapagan
+	* Yem ver: counter:hazine -5, counter:reaya 10
 
 # --- Absürt Olaylar Paketi ---
 
 Simit Tutulması (card:astronomi_simit)
-    bearer: character:aksakallidede
-    weight: 0.3
-    lockturn: 40
-    > Sultanım, müneccimbaşı yıldızlara bakmış. Yarın güneş doğmayacakmış, yerine susamlı dev bir simit doğacakmış.
-    * Krem peynir hazırlayın: counter:hazine -10, counter:reaya 15, +flag:simit_gunu
-    * Halkı camilere çağırın: counter:din 15, counter:reaya -5
+	bearer: character:aksakallidede
+	weight: 0.3
+	lockturn: 40
+	> Sultanım, müneccimbaşı yıldızlara bakmış. Yarın güneş doğmayacakmış, yerine susamlı dev bir simit doğacakmış.
+	* Krem peynir hazırlayın: counter:hazine -10, counter:reaya 15, +flag:simit_gunu
+	* Halkı camilere çağırın: counter:din 15, counter:reaya -5
 
 Kurmalı Sadrazam (card:robot_sadrazam)
-    bearer: character:sadrazam (variant:kurnaz)
-    weight: 0.2
-    require: counter:hazine > 60, !flag:metal_sadrazam
-    lockturn: 50
-    > Sultanım, Avrupa'dan kurmalı bir metal adam getirdik. Hiç rüşvet yemiyor, uyumuyor, sadece günde iki litre zeytinyağı ile çalışıyor.
-    * Mevcut sadrazamı kovun: counter:hazine 20, counter:ordu -15, +flag:metal_sadrazam
-    * Çok gürültü çıkarıyor: counter:hazine -5
+	bearer: character:sadrazam (variant:kurnaz)
+	weight: 0.2
+	require: counter:hazine > 60, !flag:metal_sadrazam
+	lockturn: 50
+	> Sultanım, Avrupa'dan kurmalı bir metal adam getirdik. Hiç rüşvet yemiyor, uyumuyor, sadece günde iki litre zeytinyağı ile çalışıyor.
+	* Mevcut sadrazamı kovun: counter:hazine 20, counter:ordu -15, +flag:metal_sadrazam
+	* Çok gürültü çıkarıyor: counter:hazine -5
 
 Kutsal Kedi (card:kutsal_kedi)
-    bearer: character:anlatici
-    weight: 0.4
-    lockturn: 30
-    > Saray kedisi yanlışlıkla mühre basmış. Şeyhülislam bunu "ilahi bir emir" olarak yorumlayıp kediyi vezir ilan etti.
-    * Kediyi besle: counter:reaya 10, counter:din 5, counter:hazine -10
-    * Miyav: counter:ordu 5, counter:reaya -5
+	bearer: character:anlatici
+	weight: 0.4
+	lockturn: 30
+	> Saray kedisi yanlışlıkla mühre basmış. Şeyhülislam bunu "ilahi bir emir" olarak yorumlayıp kediyi vezir ilan etti.
+	* Kediyi besle: counter:reaya 10, counter:din 5, counter:hazine -10
+	* Miyav: counter:ordu 5, counter:reaya -5
 
 Yeniçeri Grevi (card:yeniceri_grev)
-    bearer: character:yeniceriagasi (variant:ofkeli)
-    weight: 0.5
-    require: counter:ordu < 40
-    lockturn: 20
-    > Yeniçeriler yine kazan kaldırdı. Bu sefer brokoli yemeyiz diyorlar. Brokoliyi "yeşil şeytan parmağı" sanıyorlarmış.
-    * Üstüne yoğurt dökün: counter:hazine -10, counter:ordu 10
-    * Brokoliyi yasaklayın: counter:din 10, counter:reaya -5
+	bearer: character:yeniceriagasi (variant:ofkeli)
+	weight: 0.5
+	require: counter:ordu < 40
+	lockturn: 20
+	> Yeniçeriler yine kazan kaldırdı. Bu sefer brokoli yemeyiz diyorlar. Brokoliyi "yeşil şeytan parmağı" sanıyorlarmış.
+	* Üstüne yoğurt dökün: counter:hazine -10, counter:ordu 10
+	* Brokoliyi yasaklayın: counter:din 10, counter:reaya -5
 
 Uçan Yeniçeriler (card:ucan_yeniceri)
-    bearer: character:yeniceriagasi
-    weight: 0.2
-    require: counter:ordu > 50, counter:hazine > 40, !flag:hava_kuvvetleri
-    lockturn: 60
-    > Hezarfen Ahmet Çelebi, tüm orduya kanat takabileceğini söylüyor. "Viyana'ya havadan ineriz sultanım" diyor.
-    * Hepsine kanat yapın: counter:hazine -30, counter:ordu 25, +flag:hava_kuvvetleri
-    * Uçmak kuşlara mahsustur: counter:din 10, counter:ordu -5
+	bearer: character:yeniceriagasi
+	weight: 0.2
+	require: counter:ordu > 50, counter:hazine > 40, !flag:hava_kuvvetleri
+	lockturn: 60
+	> Hezarfen Ahmet Çelebi, tüm orduya kanat takabileceğini söylüyor. "Viyana'ya havadan ineriz sultanım" diyor.
+	* Hepsine kanat yapın: counter:hazine -30, counter:ordu 25, +flag:hava_kuvvetleri
+	* Uçmak kuşlara mahsustur: counter:din 10, counter:ordu -5
 
 Haseki vs Papağan (card:haseki_papagan)
-    bearer: character:hasekisultan (variant:ofkeli)
-    weight: 0.3
-    require: flag:asiksin
-    lockturn: 25
-    > Sultanım, o Venedik'ten gelen papağan bana "çirkin" dedi! Ya o kuş gider ya ben!
-    * Papağanı azat et: counter:reaya 5, counter:hazine -5
-    * Papağan doğruları söyler: counter:reaya -10, counter:ordu 5
+	bearer: character:hasekisultan (variant:ofkeli)
+	weight: 0.3
+	require: flag:asiksin
+	lockturn: 25
+	> Sultanım, o Venedik'ten gelen papağan bana "çirkin" dedi! Ya o kuş gider ya ben!
+	* Papağanı azat et: counter:reaya 5, counter:hazine -5
+	* Papağan doğruları söyler: counter:reaya -10, counter:ordu 5
 
 Katarakt Başlangıcı (card:katarakt_olay)
-    bearer: character:aksakallidede
-    weight: 0.1
-    require: counter:yas > 60, !flag:katarakt
-    lockturn: dispose
-    > Sultanım, gözleriniz artık iyi seçmiyor. Sadrazamı bazen papağanla karıştırıyorsunuz.
-    * Gözlük getirtin: counter:hazine -15, counter:reaya 5, +flag:katarakt
-    * Karanlık daha huzurlu: counter:din 10, counter:ordu -10
+	bearer: character:aksakallidede
+	weight: 0.1
+	require: counter:yas > 60, !flag:katarakt
+	lockturn: dispose
+	> Sultanım, gözleriniz artık iyi seçmiyor. Sadrazamı bazen papağanla karıştırıyorsunuz.
+	* Gözlük getirtin: counter:hazine -15, counter:reaya 5, +flag:katarakt
+	* Karanlık daha huzurlu: counter:din 10, counter:ordu -10

@@ -10,7 +10,6 @@ from textual.widgets import (
     Footer,
     Label,
     OptionList,
-    ProgressBar,
     Static,
 )
 
@@ -19,68 +18,71 @@ from .drivers import _format_command
 from .engine import GameEngine
 
 
-class CounterBar(Vertical):
-    """Killer counter: label + progress bar."""
+class CounterStat(Static):
+    """Killer counter displayed as 'Name: 42'."""
 
+    ANIM_INTERVAL = 0.05
     DEFAULT_CSS = """
-    CounterBar {
-        width: 1fr;
-        height: auto;
-        padding: 0 1;
-    }
-    CounterBar Label {
+    CounterStat {
+        width: auto;
+        height: 1;
+        margin: 0 2 0 0;
         text-style: bold;
     }
-    CounterBar ProgressBar {
-        padding: 0;
-    }
-    CounterBar Bar {
-        width: 1fr;
-    }
-    CounterBar PercentageStatus {
-        width: 5;
-        text-style: bold;
-    }
-    CounterBar.danger Label,
-    CounterBar.danger PercentageStatus {
+    CounterStat.danger {
         color: $error;
     }
-    CounterBar.danger Bar > .bar--bar {
-        color: $error;
-    }
-    CounterBar.warning Label,
-    CounterBar.warning PercentageStatus {
+    CounterStat.warning {
         color: $warning;
     }
-    CounterBar.warning Bar > .bar--bar {
-        color: $warning;
-    }
-    CounterBar.safe Label,
-    CounterBar.safe PercentageStatus {
-        color: $success;
-    }
-    CounterBar.safe Bar > .bar--bar {
+    CounterStat.safe {
         color: $success;
     }
     """
 
     def __init__(self, name: str, counter_id: str):
-        super().__init__()
+        super().__init__(f"{name}: 50")
         self.counter_name = name
         self.counter_id = counter_id
-
-    def compose(self) -> ComposeResult:
-        yield Label(self.counter_name)
-        yield ProgressBar(total=100, show_eta=False)
+        self._display_val = 50
+        self._target_val = 50
+        self._timer = None
 
     def set_value(self, val: int):
-        self.query_one(ProgressBar).update(progress=val)
-        if val <= 15 or val >= 85:
-            self.set_classes("danger")
-        elif val <= 30 or val >= 70:
-            self.set_classes("warning")
+        self._target_val = val
+        if self._timer is None and self._display_val != val:
+            self._timer = self.set_interval(
+                self.ANIM_INTERVAL, self._tick,
+            )
+
+    def _tick(self):
+        if self._display_val < self._target_val:
+            self._display_val += 1
+            self._set_color("safe")
+        elif self._display_val > self._target_val:
+            self._display_val -= 1
+            self._set_color("danger")
+
+        self.update(
+            f"{self.counter_name}: {self._display_val}",
+        )
+
+        if self._display_val == self._target_val:
+            if self._timer is not None:
+                self._timer.stop()
+                self._timer = None
+            self._set_resting_color(self._display_val)
+
+    def _set_resting_color(self, val: int):
+        if val <= 20 or val >= 80:
+            self._set_color("danger")
+        elif val <= 40 or val >= 60:
+            self._set_color("warning")
         else:
-            self.set_classes("safe")
+            self._set_color("safe")
+
+    def _set_color(self, cls: str):
+        self.set_classes(cls)
 
 
 class DebugPanel(VerticalScroll):
@@ -176,16 +178,19 @@ class TahtApp(App):
     """TahtLang interactive game player."""
 
     CSS = """
+    Screen {
+        padding: 1 0 0 0;
+    }
+
     #top-bar {
         dock: top;
-        height: auto;
-        padding: 0 1;
-        border-bottom: solid $primary-lighten-3;
+        height: 1;
+        padding: 0 2;
     }
 
     #card-panel {
         height: 1fr;
-        padding: 1 3;
+        padding: 1 2;
     }
 
     #bearer-label {
@@ -199,9 +204,11 @@ class TahtApp(App):
     }
 
     #choices {
-        margin-top: 1;
+        margin: 1 0 0 0;
         height: auto;
         max-height: 12;
+        padding: 0;
+        border: none;
     }
 
     #no-choices {
@@ -275,7 +282,7 @@ class TahtApp(App):
             cdef = self.engine.game.get_counter(c_id)
             if cdef and cdef.killer:
                 name = cdef.name or c_id
-                top.mount(CounterBar(name, c_id))
+                top.mount(CounterStat(name, c_id))
 
     # ── Game flow ───────────────────────────────────
 
@@ -370,7 +377,7 @@ class TahtApp(App):
             option_list.focus()
 
     def _refresh_counters(self):
-        for bar in self.query(CounterBar):
+        for bar in self.query(CounterStat):
             val = self.engine.state.counters.get(
                 bar.counter_id, 0,
             )
