@@ -40,13 +40,10 @@ jobs:
             --hidden-import tahtlang.runtime.drivers \
             --hidden-import tahtlang.runtime.tui \
             -c tahtlang/compiler/main.py
-      - run: cp docs/tahtlang.1 dist/
       - uses: actions/upload-artifact@v4
         with:
           name: tahtlang-${{ matrix.target }}
-          path: |
-            dist/tahtlang-*
-            dist/tahtlang.1
+          path: dist/tahtlang-*
 
   release:
     needs: build
@@ -59,6 +56,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: false
-          files: |
-            tahtlang-*
-            tahtlang.1
+          files: tahtlang-*
