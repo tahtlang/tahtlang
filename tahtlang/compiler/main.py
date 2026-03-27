@@ -32,7 +32,7 @@ from tahtlang.parser.validator import (
     validate_game as validate_game_semantics,
 )
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 
 def print_banner(command_name: str):
