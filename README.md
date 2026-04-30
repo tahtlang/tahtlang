@@ -4,8 +4,6 @@ Write card games in plain text. Play them in the terminal. Export to JSON for Un
 
 > *"Taht"* means *"throne"* in Turkish.
 
-<!-- TODO: Add a GIF/screenshot of `tahtlang play` here -->
-
 ## Why?
 
 If you've played [Reigns](https://reignsgame.com/reigns/), you know the format: a character shows up, says something, you pick left or right. Four stats go up and down. You die. You try again.
@@ -52,7 +50,7 @@ tahtlang compile game.taht   # Export JSON for your game engine
 ## Quick start
 
 ```bash
-pip install tahtlang
+pip install git+https://github.com/tahtlang/tahtlang.git
 tahtlang init                # Creates game.taht with a playable starter game
 tahtlang game.taht           # Play it
 ```
@@ -236,7 +234,7 @@ tahtlang examples/minimal.taht     # play the included demo
 ## Install
 
 ```bash
-pip install tahtlang
+pip install git+https://github.com/tahtlang/tahtlang.git
 ```
 
 Or via Homebrew:
